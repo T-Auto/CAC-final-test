@@ -25,40 +25,22 @@ Performance Arena for Natural Language Models / 自然语言模型性能竞技�
 
 Gemini-2.5pro
 
-![bc439f310cd8572ef060033f7349b985](Picture\bc439f310cd8572ef060033f7349b985.png)
-
 **B**
 
 Claude-3.7
 
-![186632324f5f5783fcb37ca7205ecfe4](Picture\186632324f5f5783fcb37ca7205ecfe4.png)
-
 GPT-o3
 
-![275806298e4fd2b67b94a0fb166c8f86](Picture\275806298e4fd2b67b94a0fb166c8f86.png)
-
-![5f547ead109187cda838606922654cb2](Picture\5f547ead109187cda838606922654cb2.png)
-
 DeepSeek-v3-0324
-
-![24f976823e159981f42cf0546ea132d5](Picture\24f976823e159981f42cf0546ea132d5.png)
 
 **C**
 
 Gemini-2.5-flash(thinking)
 
-![491880a562116577eae0a6f3b6c45eea](Picture\491880a562116577eae0a6f3b6c45eea.png)
-
 GPT-4o
-
-![5bdf6413108c6e0fc44fe9b5ff42e498](Picture\5bdf6413108c6e0fc44fe9b5ff42e498.png)
 
 **D**
 
 DeepSeek-R1
 
-![7dcc237c153ebd45ef64128b56cefc04](Picture\7dcc237c153ebd45ef64128b56cefc04.png)
-
 GPT-o4-mini
-
-![7a9e598e666da5e0f4b7bac2e0102ed9](Picture\7a9e598e666da5e0f4b7bac2e0102ed9.png)
