@@ -1,6 +1,6 @@
 # CAC-final-test
 
-Benchmark for Evaluating the Performance of Natural Language Models and Agents / LLM & Agent性能评测基准
+Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
 ## 项目简介
 
@@ -35,13 +35,13 @@ Benchmark for Evaluating the Performance of Natural Language Models and Agents /
 
 题目将分为四个级别：
 
-**base-test：**面向3B~30B的，本地部署/边缘计算的小模型，较为简单且生活中常用的问题
+**base-test**：面向3B~30B的，本地部署/边缘计算的小模型，较为简单且生活中常用的问题
 
-**advanced-test：**8B/30B/70B模型几乎无法完成，但是可以被500B以上的DeepSeek、GPT、Gemini等巨参数模型完成的问题
+**advanced-test**：8B/30B/70B模型几乎无法完成，但是可以被500B以上的DeepSeek、GPT、Gemini等巨参数模型完成的问题
 
-**final-test：**以Goolge-AI-studio最大思考上限的Gemini-2.5-pro的“偶尔可以答对，但需要多次刷新”为难度基准的问题
+**final-test**：以Goolge-AI-studio最大思考上限的Gemini-2.5-pro的“偶尔可以答对，但需要多次刷新”为难度基准的问题
 
-**final-test+：**包括Gemini-Deepthink与GPT-5-pro在内的当前所有顶级AI都无法解决，但人类可以解决的问题
+**final-test+**：包括Gemini-Deepthink与GPT-5-pro在内的当前所有顶级AI都无法解决，但人类可以解决的问题
 
 
 
@@ -87,7 +87,7 @@ A：那真是我们的荣幸。不过，本项目仍然会把题目分为公开�
 
 ### 例：Question (final-test难度，Gemini正确作答率约30%)
 
-Whether the local deformation functor of Sheaf $O(-1) \oplus O(1) $ in $\mathbb{P}^1_k$ is miniversal? How about the crude deformation functor $F_1$?
+Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P}^1_k$ is miniversal? How about the crude deformation functor $F_1$?
 
 ### Analysis
 
@@ -166,6 +166,7 @@ Whether the local deformation functor of Sheaf $O(-1) \oplus O(1) $ in $\mathbb{
 >   3 Conclusion
 >   The local deformation functor $F$ (which keeps track of the isomorphism to the special fiber) for $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ on $\mathbb{P}^1_k$ is miniversal. It is represented by a smooth, one-dimensional formal scheme, $\text{Spf} k[[t]]$.
 >   However, the crude local functor $F_1$ (which only considers isomorphism classes of fibers) is not miniversal. Its tangent space is not a vector space, which violates a necessary condition (H3) of Schlessinger's criterion. This example highlights the importance of distinguishing between these two types of functors and shows how non-trivial automorphism groups can obstruct the existence of a well-behaved moduli space.
+
 
 
 
