@@ -1,10 +1,15 @@
+# Deno脚本改进（v1）
 
 Source： https://github.com/zhu-jl18/thanks-to-cerebras
 
-# description
+## 测试环境
 
-Given a ts script:
-```
+接入claude code进行测试，直接bypass
+
+## description
+
+Given a ts script for deno:
+```ts
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 
 const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
@@ -140,6 +145,7 @@ console.log(`- Authentication: ${authPassword ? 'Enabled' : 'Disabled'}`);
 console.log(`- Request processing interval: ${RATE_LIMIT_MS}ms`);
 console.log(`- Max requests per second (approx): ${1000 / RATE_LIMIT_MS}`);
 ```
+
 当前痛点：
 - 部分key失效后无法单点更新，每次需要全量更新
 - 无法快速排查哪些key失效
@@ -154,3 +160,17 @@ console.log(`- Max requests per second (approx): ${1000 / RATE_LIMIT_MS}`);
     - 导入密钥，删除密钥，测试密钥的基础功能
     - 支持批量导入密钥（text模式，每行一个）
     - 记录各个密钥的请求次数
+- 管理面板默认开放；
+- 代理鉴权通过可选环境变量 AUTH_PASSWORD 控制。
+部署完成后同时提供 / 管理界面、/v1/chat/completions 代理和 /v1/models 列表接口。
+
+
+
+##  Criterion
+
+唯一标准，经过至多两轮迭代后
+- 在deno部署后可以正常使用
+
+这个题目还是有一定区分度的，首先得能写对跑通吧，其次对于加入KV后并发的处理也是个问题，我不懂具体原理，但是minimax2写的代码被codex狂喷没有并发。
+
+
