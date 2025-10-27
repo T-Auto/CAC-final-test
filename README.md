@@ -85,11 +85,12 @@ A：那真是我们的荣幸。不过，本项目仍然会把题目分为公开�
 
 
 
-### 例：Question (final-test难度，Gemini正确作答率约30%)
+### 例：(final-test难度，Gemini正确作答率约30%)
 
+**Question**:
 Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P}^1_k$ is miniversal? How about the crude deformation functor $F_1$?
 
-### Analysis
+**Analysis**
 
 >**1 Problem Statement**
 >
@@ -166,6 +167,7 @@ Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P
 >   3 Conclusion
 >   The local deformation functor $F$ (which keeps track of the isomorphism to the special fiber) for $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ on $\mathbb{P}^1_k$ is miniversal. It is represented by a smooth, one-dimensional formal scheme, $\text{Spf} k[[t]]$.
 >   However, the crude local functor $F_1$ (which only considers isomorphism classes of fibers) is not miniversal. Its tangent space is not a vector space, which violates a necessary condition (H3) of Schlessinger's criterion. This example highlights the importance of distinguishing between these two types of functors and shows how non-trivial automorphism groups can obstruct the existence of a well-behaved moduli space.
+
 
 
 
