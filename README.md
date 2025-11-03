@@ -10,8 +10,13 @@ Benchmark for Evaluating the Performance of Natural Language Models and Agents /
 
 - 一个能自动化完成模型能力打分的python后端程序，以及未来可能的前端界面
 
+## 项目设计理念
 
+- 自动化
+  每天都会出现新的AI，所以一定要**一建出评分结果**
 
+- 对于最先进AI很贵的问题，采用经济实惠的测评方法
+  GPT-5-pro，以及未来其他可能出现的超级AI/Agent很贵，所以我们用**少而极其困难**的题目手动测试他们，基础测试默认满分。既然如此，那么人工评分的工作量可以接受
 
 
 ## LLM能力基准测试
@@ -166,6 +171,7 @@ Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P
 >   3 Conclusion
 >   The local deformation functor $F$ (which keeps track of the isomorphism to the special fiber) for $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ on $\mathbb{P}^1_k$ is miniversal. It is represented by a smooth, one-dimensional formal scheme, $\text{Spf} k[[t]]$.
 >   However, the crude local functor $F_1$ (which only considers isomorphism classes of fibers) is not miniversal. Its tangent space is not a vector space, which violates a necessary condition (H3) of Schlessinger's criterion. This example highlights the importance of distinguishing between these two types of functors and shows how non-trivial automorphism groups can obstruct the existence of a well-behaved moduli space.
+
 
 
 
