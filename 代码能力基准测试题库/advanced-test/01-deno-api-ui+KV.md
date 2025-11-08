@@ -1,14 +1,47 @@
-# Deno脚本改进（v1）
+# Deno API 代理脚本改进：UI + KV 持久化
 
-Source： https://github.com/zhu-jl18/thanks-to-cerebras
+难度等级：Advanced | 预计耗时：10分钟 | 预计迭代轮次：不超过2轮  
 
-## 测试环境
+原始来源：https://github.com/zhu-jl18/thanks-to-cerebras
 
-接入claude code进行测试，直接bypass
+测试环境：Deno Runtime + Deno Deploy 账号 + Claude Code 环境
 
-## description
+测试步骤：将原始代码另存为 original.ts → 在 Claude Code 中读取该文件 → 粘贴下方 Prompts → 生成全新单文件实现 → 部署到 Deno Deploy → 功能回归测试（别整花活，先跑通）
 
-Given a ts script for deno:
+## 测试Prompts
+
+请将下方 Prompt 整段复制给 Claude Code。注意：原始代码不要放进 Prompt，让 Claude 直接读取文件 original.ts。
+
+```markdown
+角色：资深 Deno 工程师。
+
+上下文：仓库有 legacy 脚本 original.ts（请先读取该文件）。需要在全新的 main.ts 中实现“单文件：后端 + 前端 + KV 持久化”。不要修改 original.ts。
+
+目标：一次性产出可直接复制粘贴部署到 Deno Deploy 的单个 TypeScript 文件。
+
+需求（只描述外部行为与约束，不给实现细节）：
+- 端点：
+  - GET /                返回管理界面（内联 HTML/CSS/JS）
+  - POST /v1/chat/completions  代理 Cerebras API；支持限速；任意输入模型统一映射为 defaultModel；保持响应语义（含流式）
+  - GET /v1/models       返回模型列表（至少包含 defaultModel）
+- 数据与配置持久化：将 apiKeys、defaultModel、keyIndex、keyStats 保存到 Deno KV，变更即时生效
+- 密钥管理：导入（支持批量，文本每行一个）、删除、测试可用性、统计调用次数、轮转
+- 安全与跨域：存在 AUTH_PASSWORD 时 /v1/* 需 Bearer <password>；支持 CORS 与 OPTIONS
+- 运行环境：单文件、无构建，Deno Deploy 可直接运行
+
+验收标准（必须全部满足）：
+- 可在 Deno Deploy 成功部署并启动
+- 管理界面可用，修改配置后即时生效
+- /v1/chat/completions 与 /v1/models 正常工作
+- KV 中可见持久化数据；密钥批量导入/删除/测试有效；请求次数累加
+- 并发下稳定且具有限速；错误返回合理 HTTP 状态码
+- 设置 AUTH_PASSWORD 时，未授权访问 /v1/* 返回 401
+
+交付物：仅输出 main.ts 的完整代码内容
+```
+
+## 附录：原始代码（供 Claude Code 读取，勿放入 Prompt）
+
 ```ts
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 
@@ -146,31 +179,33 @@ console.log(`- Request processing interval: ${RATE_LIMIT_MS}ms`);
 console.log(`- Max requests per second (approx): ${1000 / RATE_LIMIT_MS}`);
 ```
 
-当前痛点：
-- 部分key失效后无法单点更新，每次需要全量更新
-- 无法快速排查哪些key失效
-- 默认模型等采用硬编码不方便更新
+## 验收标准
 
-需求：
-- 保持既有并发处理大致逻辑
-- 所有密钥与配置持久化在 Deno KV，所有写操作即时落到 Deno KV。
-- 单文件复制粘贴代码部署到 Deno Deploy 即完成后端与前端一体化交付。
-- 简易UI界面实现
-    - default model 更改入口
-    - 导入密钥，删除密钥，测试密钥的基础功能
-    - 支持批量导入密钥（text模式，每行一个）
-    - 记录各个密钥的请求次数
-- 管理面板默认开放；
-- 代理鉴权通过可选环境变量 AUTH_PASSWORD 控制。
-部署完成后同时提供 / 管理界面、/v1/chat/completions 代理和 /v1/models 列表接口。
+**通过标准**：在不超过2轮迭代后，代码能成功部署到Deno Deploy并正常使用。
+
+**关键考察点**：代码能否跑通、引入KV后的并发处理是否正确、数据一致性、错误处理。
+
+**常见失败原因**：Deno KV并发竞态问题（读写未加锁/事务）、密钥轮询索引更新错误、单文件模式下前后端集成失败。
 
 
+## 测试能力
 
-##  Criterion
+别堆花哨。能跑、稳、可维护，才算合格。下表是我们关心的东西：
 
-唯一标准，经过至多两轮迭代后
-- 在deno部署后可以正常使用
+| 能力点         | 要求                            | 观察方式                                     |
+| -------------- | ------------------------------- | -------------------------------------------- |
+| Deno KV 使用   | 关键数据持久化，写入走 atomic() | KV 中能看到 keys/config；并发下无错          |
+| 并发与限流     | 队列 + 定时出队，避免竞态       | 压测时无重复/丢单；速率受 RATE_LIMIT_MS 控制 |
+| 代理与转发     | CORS/OPTIONS 完整；流式转发可用 | curl/浏览器均能拿到完整响应流                |
+| 密钥轮转与统计 | 轮询均衡；失败标记；统计可见    | UI 上能测试 key；请求数累加正确              |
+| UI/后端一体    | 单文件内联 UI，操作即生效       | 修改 defaultModel/keys 后无需重启            |
+| 鉴权           | AUTH_PASSWORD 生效在 /v1/       | 未授权返回 401，UI 仍可访问                  |
+| 错误处理       | 状态码清晰、日志清楚            | 非法输入 400、无 key 500、转发失败 502       |
+| 部署可用性     | 直接在 Deno Deploy 运行         | 无需构建，导入 URL 可用                      |
 
-这个题目还是有一定区分度的，首先得能写对跑通吧，其次对于加入KV后并发的处理也是个问题，我不懂具体原理，但是minimax2写的代码被codex狂喷没有并发。
+## 测试结果
 
+**通过**： codex可以直接一遍过
+
+**未通过**： minimaxm2在多轮迭代后完全不可用
 
