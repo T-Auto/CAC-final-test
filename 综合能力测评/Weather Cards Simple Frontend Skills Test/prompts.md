@@ -1,0 +1,1 @@
+Help me write an HTML to create a horizontal weather page with 4 weather cards (Sunny, Windy, Rainstorm, Snowstorm), cards with a gorgeous appearance, elegant animations/effects, providing users with an immersive experience through dynamic elements, skillfully using techniques like shadows, hover, blur to enhance visual impact, for better UX, you can freely explore.
