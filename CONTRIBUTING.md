@@ -36,6 +36,45 @@ advanced-test/
 ├── 002-problem_name_2.md
 ```
 
+## 测试结果存放规范
+为保证测试结果可追溯且与题目一一对应，请在 `.test-results/` 下集中管理。
+
+- 目录结构（与题库目录对齐）
+  ```text
+  .test-results/
+  ├── 代码能力基准测试题库/
+  │   ├── advanced-test/
+  │   ├── base-test/
+  │   ├── final-test/
+  │   └── final-test+/
+  ├── 数理能力基准测试题库/
+  │   ├── advanced-test/
+  │   ├── base-test/
+  │   ├── final-test/
+  │   └── final-test+/
+  ├── 自然语言与逻辑能力基准测试题库/
+  │   ├── advanced-test/
+  │   ├── base-test/
+  │   ├── final-test/
+  │   └── final-test+/
+  └── 综合能力测评/
+  ```
+
+- 命名规则（文件名）
+  - 模板：`模型名-题目文件名.md`
+  - 说明：模型名仅使用小写字母、数字和连字符；题目文件名等于题目源 md 的文件名去掉扩展名（包含编号）。
+
+- 使用示例
+  - 可点击路径示例： [.test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md](.test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md)
+  - 完整对应示例：
+    ```text
+    # 题目文件
+    代码能力基准测试题库/advanced-test/001-binary-search.md
+    # 测试结果（多模型并存）
+    .test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md
+    .test-results/代码能力基准测试题库/advanced-test/gpt-4o-mini-001-binary-search.md
+    ```
+
 
 ## Commit Message 规范
 
