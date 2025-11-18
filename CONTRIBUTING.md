@@ -1,4 +1,4 @@
-# 仓库维护规范 v0.1
+# 仓库维护规范 v2.0
 
 > **❗在push和提交pr之前务必阅读此文档**
 
@@ -28,52 +28,61 @@ CAC-final-test/
 └── CONTRIBUTING.md # 仓库维护手册
 ```
 
-对于具体分类题库，这里以 `代码能力基准测试题库/advanced-test/`为例子：
+对于具体分类题库，这里以 `自然语言与逻辑能力基准测试题库/base-test/` 为例子：
 ```text
-# 文件需要遵循时间顺序编号
-advanced-test/
-├── 001-problem_name_1.md
-├── 002-problem_name_2.md
+# 题目以目录形式组织，遵循时间顺序编号
+base-test/
+├── 001-age-multiple-reasoning/
+│   ├── README.md
+│   └── test-results/
+├── 002-clock-interval-trap/
+│   ├── README.md
+│   └── test-results/
+├── 003-direction-reasoning/
+│   ├── README.md
+│   └── test-results/
+└── .gitkeep
 ```
 
+**目录命名规则：**
+- `NNN-problem-name/`：三位数字编号 + 连字符 + 问题描述（小写英文，单词间用连字符分隔）
+- 每个题目目录必须包含 `README.md` 文件（题目内容）
+- 每个题目目录必须包含 `test-results/` 子目录（存放该题目的测试结果）
+
 ## 测试结果存放规范
-为保证测试结果可追溯且与题目一一对应，请在 `.test-results/` 下集中管理。
 
-- 目录结构（与题库目录对齐）
-  ```text
-  .test-results/
-  ├── 代码能力基准测试题库/
-  │   ├── advanced-test/
-  │   ├── base-test/
-  │   ├── final-test/
-  │   └── final-test+/
-  ├── 数理能力基准测试题库/
-  │   ├── advanced-test/
-  │   ├── base-test/
-  │   ├── final-test/
-  │   └── final-test+/
-  ├── 自然语言与逻辑能力基准测试题库/
-  │   ├── advanced-test/
-  │   ├── base-test/
-  │   ├── final-test/
-  │   └── final-test+/
-  └── 综合能力测评/
-  ```
+为保证测试结果可追溯且与题目一一对应，测试结果文件存放在对应题目目录下的 `test-results/` 子目录中。
 
-- 命名规则（文件名）
-  - 模板：`模型名-题目文件名.md`
-  - 说明：模型名仅使用小写字母、数字和连字符；题目文件名等于题目源 md 的文件名去掉扩展名（包含编号）。
+**目录结构示例：**
+```text
+自然语言与逻辑能力基准测试题库/base-test/
+├── 001-age-multiple-reasoning/
+│   ├── README.md
+│   └── test-results/
+│       ├── claude-3.5-sonnet.md
+│       ├── gpt-4o.md
+│       └── deepseek.md
+├── 002-clock-interval-trap/
+│   ├── README.md
+│   └── test-results/
+│       ├── claude-3.5-sonnet.md
+│       └── gpt-4o.md
+```
 
-- 使用示例
-  - 可点击路径示例： [.test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md](.test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md)
-  - 完整对应示例：
-    ```text
-    # 题目文件
-    代码能力基准测试题库/advanced-test/001-binary-search.md
-    # 测试结果（多模型并存）
-    .test-results/代码能力基准测试题库/advanced-test/claude-3.5-001-binary-search.md
-    .test-results/代码能力基准测试题库/advanced-test/gpt-4o-mini-001-binary-search.md
-    ```
+**命名规则：**
+- 测试结果文件名：`模型名.md`
+- 模型名仅使用小写字母、数字和连字符
+- 每个模型的测试结果独立存放在一个文件中
+
+**完整对应示例：**
+```text
+# 题目目录
+自然语言与逻辑能力基准测试题库/base-test/001-age-multiple-reasoning/
+├── README.md  # 题目内容
+└── test-results/
+    ├── claude-3.5-sonnet.md  # Claude 3.5 Sonnet 的测试结果
+    └── gpt-4o.md             # GPT-4o 的测试结果
+```
 
 
 ## Commit Message 规范
@@ -184,12 +193,15 @@ advanced-test/
 
 #### 基准测试题库命名规则
 
-对于三大基准测试题库（代码能力、数理能力、自然语言与逻辑能力），题目文件应遵循以下命名规范：
+对于三大基准测试题库（代码能力、数理能力、自然语言与逻辑能力），题目目录应遵循以下命名规范：
 
 ```
-NNN-problem-name.md
+NNN-problem-name/
+├── README.md
+└── test-results/
 ```
 
+**目录命名规则：**
 - `NNN`：三位数字编号，从 001 开始递增
 - `problem-name`：题目的简短英文描述
   - 使用小写字母
@@ -198,14 +210,15 @@ NNN-problem-name.md
   - 保持简洁但有描述性
 
 **示例：**
-- ✅ `001-binary-search.md`
-- ✅ `002-matrix-multiplication.md`
-- ✅ `003-dfs-traversal.md`
-- ❌ `1-problem.md` （编号不足三位）
-- ❌ `001_problem_name.md` （使用了下划线）
-- ❌ `001-Problem-Name.md` （使用了大写字母）
-
-**注意：** 现有的旧命名格式将逐步迁移到新格式，新题目必须使用上述规范。
+- ✅ `001-binary-search/`
+- ✅ `002-matrix-multiplication/`
+- ✅ `003-dfs-traversal/`
+- ✅ `001-age-multiple-reasoning/`
+- ✅ `005-hand-swap-reasoning/`
+- ❌ `1-problem/` （编号不足三位）
+- ❌ `001_problem_name/` （使用了下划线）
+- ❌ `001-Problem-Name/` （使用了大写字母）
+- ❌ `001-problem.md` （应该是目录，不是文件）
 
 #### 综合能力测评命名规则
 
@@ -214,15 +227,26 @@ NNN-problem-name.md
 
 ### 题目内容格式建议
 
-虽然不强制要求统一的内容结构，但建议新题目包含以下基本部分：
+题目内容应写在 `README.md` 文件中。虽然不强制要求统一的内容结构，但建议参考以下格式：
 
+**代码能力题库建议格式：**
 1. **题目描述** - 清晰说明问题背景和要求
 2. **输入说明** - 描述输入格式和约束
 3. **输出说明** - 描述期望的输出格式
 4. **示例** - 提供输入输出示例
 5. **提示**（可选） - 解题思路或关键点提示
 
+**逻辑与数理题库建议格式：**
+1. **Question** - 题目描述
+2. **Analysis** - 详细分析
+   - 正确答案
+   - 解题过程（可包含多种解法）
+   - 常见错误
+   - 核心考点
+
+参考示例：`自然语言与逻辑能力基准测试题库/base-test/001-age-multiple-reasoning/README.md`
+
 **重要说明：**
 - 当前仓库中已有题目不要求按统一模板重构
-- 新题目建议参考此格式，但可根据题目特性灵活调整
-- 不强制使用 YAML front matter 或其他结构化元数据
+- 新题目建议参考同类题库中现有题目的格式
+- 可根据题目特性灵活调整内容结构
