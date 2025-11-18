@@ -2,179 +2,88 @@
 
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
-## 项目简介
+## 📖 项目简介 (Project Overview)
 
-本项目将包含：
+本项目旨在构建一个全面且高难度的 AI 能力评测体系，主要包含：
 
-- 一个全面的大模型与Agent能力测试题库
+- **全方位题库**：涵盖大模型与 Agent 的核心能力测试。
+- **自动化测评**：计划开发 Python 后端程序，实现模型能力的自动化打分（及未来的前端展示）。
 
-- 一个能自动化完成模型能力打分的python后端程序，以及未来可能的前端界面
+## 💡 设计理念 (Design Philosophy)
 
-## 项目设计理念
+- **自动化 (Automation)**
+  面对日新月异的 AI 模型，我们的目标是实现**一键生成评分结果**，以快速响应模型的迭代更新。
 
-- 自动化
-  每天都会出现新的AI，所以一定要**一建出评分结果**
+- **经济实惠的高难度测评 (Economic & Challenging)**
+  针对 GPT-5-pro 等昂贵的顶尖模型，我们采用**“少而精”**的策略。通过极高难度的题目进行手动或半自动测试，而基础测试默认满分。这既保证了评测的区分度，又将人工评分的工作量控制在可接受范围内。
 
-- 对于最先进AI很贵的问题，采用经济实惠的测评方法
-  GPT-5-pro，以及未来其他可能出现的超级AI/Agent很贵，所以我们用**少而极其困难**的题目手动测试他们，基础测试默认满分。既然如此，那么人工评分的工作量可以接受
+## 🧩 LLM 能力基准测试 (LLM Benchmarks)
 
+### 1. 数理能力基准测试
+- **基础题目**：分层次的数学/物理题目，用于测定 AI 的基础数理能力（主要区分本地部署的小模型）。
+- **Final-test 题目**：专门用于评测顶级模型的极限推理能力。
 
-## LLM能力基准测试
+### 2. 代码能力基准测试
+- **后端开发**：测试 AI 在 C / C++ / Python / Java / Golang / Rust 等语言中的编程能力。
+- **前端审美**：测试 AI 的前端设计与实现能力（**注：此项仅展示效果，不进行评分**）。
 
-### 数理能力基准测试
+### 3. 自然语言与逻辑能力基准测试
+- **逻辑推理**：包含日常对话理解、逻辑陷阱（如“弱智吧”题目）及悬疑推理问题。
+- **语言风格**：考察语言表达能力与文风（**注：此项仅展示，不评分**）。
 
-- 一系列分层次的数学/物理题目，测定AI的基础数理能力。基础题目用于区分给本地部署小模型打分，Final-test题目用于评测顶级模型。
+## 📊 难度分级 (Difficulty Levels)
 
-### 代码能力基准测试
+| 级别 | 描述 | 目标模型 |
+| :--- | :--- | :--- |
+| **Base-test** | 较为简单，生活中常用的问题。 | 3B~30B 本地/边缘计算小模型 |
+| **Advanced-test** | 具有一定难度，8B/30B/70B 模型几乎无法完成。 | 500B+ (DeepSeek, GPT-4, Gemini 等) |
+| **Final-test** | 极高难度，以 Google AI Studio 中 Gemini-1.5-pro 的最大思考上限为基准（需多次尝试）。 | 顶级模型 (SOTA) |
+| **Final-test+** | 当前所有顶级 AI 均无法解决，但人类可以解决的问题。 | 未来模型 (Gemini-Deepthink, GPT-5 等) |
 
-- 测试AI在 C / C++ / Python / java / golong / rust 后端的能力表现
+## 🧪 其他测试 (Other Tests)
 
-- 测试AI的前端审美能力，只展示，不评分
+### LLM 日用体验测试
+- **幻觉与谄媚**：测评模型是否存在幻觉或过度讨好用户的情况。
 
-### 自然语言与逻辑能力基准测试
+### Agent 相关测试
+- 由于此部分暂时无法自动化，当前阶段我们将优先专注于 LLM 基准能力的测试编写。
 
-- 一系列日常对话理解/逻辑推理，如弱智吧题目或者悬疑推理问题
-- 语言能力与文风，只展示，不评分
+## ❓ 常见问题 (Q&A)
 
-
-
-题目将分为四个级别：
-
-**base-test**：面向3B~30B的，本地部署/边缘计算的小模型，较为简单且生活中常用的问题
-
-**advanced-test**：8B/30B/70B模型几乎无法完成，但是可以被500B以上的DeepSeek、GPT、Gemini等巨参数模型完成的问题
-
-**final-test**：以Goolge-AI-studio最大思考上限的Gemini-2.5-pro的“偶尔可以答对，但需要多次刷新”为难度基准的问题
-
-**final-test+**：包括Gemini-Deepthink与GPT-5-pro在内的当前所有顶级AI都无法解决，但人类可以解决的问题
-
-
-
-## LLM日用体验测试
-
-### 幻觉&谄媚表现
-
-- 测评幻觉
-- ......
-
-
-
-
-
-## Agent相关测试
-
-由于这部分暂时无法自动化完成，在当前阶段，我们先专注于LLM基准能力测试的编写
-
-
-
-
-
-## Q&A
-
-**Q：为什么没有llm自带文科能力测试或者知识储量基准测试？**
-
-A：随着Agent与上网搜索能力的普及，如果你有解决此类问题的需求，与其向一个“知识更丰富”的模型提问，不如使用可以灵活上网搜索的Agent来解决此类问题
-
-**Q：题库泄露导致模型怎么办？**
-
-A：那真是我们的荣幸。不过，本项目仍然会把题目分为公开题库和私有题库两部分，如果一个模型在公开题库和私有题库的表现差距过大，我们会指出“刷分”现象的存在
-
-
-
-
-
-## 投稿需求
-
-- 需要一个问题和一个标准答案，并说明这道题目主要考察LLM的哪一项能力
-- 为自动化评测需求，我们需要一个裁判LLM对照标准答案判断回答问题的模型的对错。不可以是**证明题**，不可以是**没有标准答案的发散性问题**，那样很难被判断“对错”
-
-
-
-### 例：Question (final-test难度，Gemini正确作答率约30%)
-
-Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P}^1_k$ is miniversal? How about the crude deformation functor $F_1$?
-
-### Analysis
-
->**1 Problem Statement**
+> **Q：为什么没有 LLM 自带文科能力测试或者知识储量基准测试？**
 >
->Let $k$ be an algebraically closed field. We study the local deformations of the vector bundle $F_0 = \mathcal{O}_{\mathbb{P}^1}(-1) \oplus \mathcal{O}_{\mathbb{P}^1}(1)$ on the projective line $X_0 = \mathbb{P}^1_k$.
->Let $\mathcal{C}$ be the category of local Artin $k$-algebras with residue field $k$. We define the local deformation functor $F: \mathcal{C} \to (\text{Sets})$ as follows: for any $A \in \mathcal{C}$, $F(A)$ is the set of isomorphism classes of pairs $(\mathcal{F}, \phi)$, where:
->
->1. $\mathcal{F}$ is a coherent sheaf on $X_A = \mathbb{P}^1_A$, flat over $A$.
->2. $\phi: \mathcal{F} \otimes_A k \to F_0$ is an isomorphism of sheaves on $X_0$.
->   An isomorphism between two such pairs $(\mathcal{F}_1, \phi_1)$ and $(\mathcal{F}_2, \phi_2)$ is an isomorphism of sheaves $\psi: \mathcal{F}_1 \to \mathcal{F}_2$ over $X_A$ such that $\phi_1 = \phi_2 \circ (\psi \otimes_A k)$.
->   Proposition 1. The local deformation functor $F$ of the sheaf $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ on $\mathbb{P}^1_k$ has a miniversal family.
->   Proof. We will use Schlessinger's criterion (Theorem 16.2) to prove this. A functor has a miniversal family if it satisfies the following four conditions:
->   (H0) $F(k)$ consists of a single element.
->   (H1) For any small extension $A' \to A$, the map $F(A' \times_A A'') \to F(A') \times_{F(A)} F(A'')$ is surjective.
->   (H2) The map in (H1) is a bijection for the special case $A = k, A' \to k, A'' = D = k[t]/t^2$.
->   (H3) The tangent space $t_F = F(D)$ is a finite-dimensional $k$-vector space.
->   Verification of the Conditions
->   (H0) Base Point: The set $F(k)$ consists of deformations over $k$ itself. The only such object is $(F_0, \text{id})$, up to isomorphism. Thus, $F(k)$ is a singleton set. Condition (H0) holds.
->   (H3) Tangent Space: The tangent space $t_F = F(D)$ is the set of first-order deformations. By Theorem 2.7, this set is in one-to-one correspondence with the group $\text{Ext}^1_{X_0}(F_0, F_0)$. We compute this group:
->
->$$
->\text{Ext}^1(F_0, F_0) = \text{Ext}^1(\mathcal{O}(-1) \oplus \mathcal{O}(1), \mathcal{O}(-1) \oplus \mathcal{O}(1))
->$$
->
->$$
->\simeq \text{Ext}^1(\mathcal{O}(-1), \mathcal{O}(-1)) \oplus \text{Ext}^1(\mathcal{O}(-1), \mathcal{O}(1))
->$$
->
->$$
->\oplus \text{Ext}^1(\mathcal{O}(1), \mathcal{O}(-1)) \oplus \text{Ext}^1(\mathcal{O}(1), \mathcal{O}(1))
->$$
->
->Using the isomorphism $\text{Ext}^1(\mathcal{O}(a), \mathcal{O}(b)) \simeq H^1(\mathbb{P}^1_k, \mathcal{O}(b-a))$, we compute each term:
->$\bullet H^1(\mathbb{P}^1_k, \mathcal{O}(-1 - (-1))) = H^1(\mathbb{P}^1_k, \mathcal{O}(0)) = 0$.
->$\bullet H^1(\mathbb{P}^1_k, \mathcal{O}(1 - (-1))) = H^1(\mathbb{P}^1_k, \mathcal{O}(2)) = 0$.
->$\bullet H^1(\mathbb{P}^1_k, \mathcal{O}(-1 - 1)) = H^1(\mathbb{P}^1_k, \mathcal{O}(-2)) \simeq k$.
->$\bullet H^1(\mathbb{P}^1_k, \mathcal{O}(1 - 1)) = H^1(\mathbb{P}^1_k, \mathcal{O}(0)) = 0$.
->Therefore, the tangent space is $t_F \simeq k$. This is a one-dimensional $k$-vector space. Condition (H3) holds.
->(H1) The Gluing Condition: Let $A' \to A$ and $A'' \to A$ be morphisms in $\mathcal{C}$, and let $A^* = A' \times_A A''$. Suppose we are given deformations $(\mathcal{F}', \phi')$ over $A'$ and $(\mathcal{F}'', \phi'')$ over $A''$ that both restrict to the same deformation $(\mathcal{F}, \phi)$ over $A$. Since $F_0$ is locally free, any flat deformation of it over an Artin ring is also locally free (Ex. 7.1). We can form the fibered product of sheaves $\mathcal{F}^* = \mathcal{F}' \times_{\mathcal{F}} \mathcal{F}''$ over the scheme $X_{A^*}$. By Proposition 16.4, since $\mathcal{F}'$ and $\mathcal{F}''$ are flat over $A'$ and $A''$ respectively, and the base change maps are isomorphisms by definition, the resulting sheaf $\mathcal{F}^*$ is flat over $A^*$. It clearly restricts to $\mathcal{F}'$ and $\mathcal{F}''$ as required. Thus, there exists an element in $F(A^*)$ that maps to the given pair in $F(A') \times_{F(A)} F(A'')$. Condition (H1) holds.
->(H2) The Tangent Space Bijection: This condition requires that the map $F(A' \times_k D) \to F(A') \times_{F(k)} F(D)$ is a bijection for any surjection $A' \to k$. This is a special case of the property (H4) for pro-representability, which is related to the action of the tangent space on the set of liftings. Since the functor of deformations of a vector bundle has a tangent theory (Ex. 16.5), and the obstruction space $H^2(\text{End}(F_0))$ is zero, the conditions (H1) and (H2) are satisfied (Ex. 16.4).
->Since all four conditions (H0)-(H3) of Schlessinger's criterion are satisfied, the functor $F$ has a miniversal family.
->
->**2 The Jump Phenomenon and the Crude Functor**
->The subtlety of this example arises when we consider the crude local functor, let's call it $F_1$, which classifies isomorphism classes of families $\mathcal{F}/A$ such that $\mathcal{F} \otimes_A k \simeq F_0$, without fixing the isomorphism $\phi$.
->Proposition 2. The crude local functor $F_1$ for $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ does not have a miniversal family.
->Proof. A necessary condition for a functor to have a miniversal family is (H3), that its tangent space $t_{F_1} = F_1(D)$ must be a finite-dimensional $k$-vector space. The tangent space $t_{F_1}$ is the set of orbits of $t_F = \text{Ext}^1(F_0, F_0)$ under the action of the automorphism group $\text{Aut}(F_0)$.
->
->1. The Tangent Space $t_F$: As computed above, $t_F \simeq \text{Ext}^1(\mathcal{O}(1), \mathcal{O}(-1)) \simeq k$. An element $\lambda \in k$ corresponds to the extension class of $0 \to \mathcal{O}(-1) \to \mathcal{F}_{\lambda} \to \mathcal{O}(1) \to 0$.
->2. The Automorphism Group $\text{Aut}(F_0)$: The endomorphisms of $F_0$ are given by $H^0(\text{End}(F_0))$.
->
->$$
->\text{End}(F_0) = \text{Hom}(\mathcal{O}(-1) \oplus \mathcal{O}(1), \mathcal{O}(-1) \oplus \mathcal{O}(1)) \simeq \begin{pmatrix} \mathcal{O} & \mathcal{O}(2) \\ \mathcal{O}(-2) & \mathcal{O} \end{pmatrix}
->$$
->
->Taking global sections:
->$$
->H^0(\text{End}(F_0)) \simeq \begin{pmatrix} H^0(\mathcal{O}) & H^0(\mathcal{O}(2)) \\ H^0(\mathcal{O}(-2)) & H^0(\mathcal{O}) \end{pmatrix} = \begin{pmatrix} k & k^3 \\ 0 & k \end{pmatrix}
->$$
->The automorphism group $\text{Aut}(F_0)$ consists of the invertible elements of this algebra. An endomorphism is an automorphism if its determinant is a non-zero scalar.
->
->3. The Action: An automorphism $\psi \in \text{Aut}(F_0)$ acts on an extension class $\xi \in \text{Ext}^1(F_0, F_0)$. Specifically, if
->
->$$
->\psi = \begin{pmatrix} \psi_{11} & \psi_{12} \\ \psi_{21} & \psi_{22} \end{pmatrix}
->$$
->
->and $\xi \in \text{Ext}^1(\mathcal{O}(1), \mathcal{O}(-1))$, the action is given by composition: $\xi \mapsto \psi_{11} \circ \xi \circ \psi_{22}^{-1}$. Here, $\psi_{11}$ and $\psi_{22}$ are non-zero scalars from $k$. So the action is $\xi \mapsto (\psi_{11}/\psi_{22})\xi$. Since $\psi_{11}, \psi_{22} \in k^\times$, the group $k^\times$ acts on $t_F \simeq k$ by multiplication.
->
->4. The Orbits: The action of $k^\times$ on $k$ has two orbits:
->   $\bullet$ The zero element $\{0\}$, corresponding to the trivial (split) extension.
->   $\bullet$ The set of all non-zero elements $k^\times$, corresponding to all non-split extensions.
->   So, the tangent space of the crude functor is the orbit space $t_{F_1} = t_F/\text{Aut}(F_0) = \{[0], [1]\}$, a set with two points.
->   This set is not a $k$-vector space. Therefore, condition (H3) fails for the crude functor $F_1$.
->   Remark 1 (The Jump Phenomenon). The global family over $\text{Spec}(k[t])$ defined by the extension class $t \in k[t]$ has fiber $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ at $t = 0$. For any $t \neq 0$, the extension is non-split and corresponds to a non-zero element in $\text{Ext}^1$. All such non-split extensions of rank 2 on $\mathbb{P}^1$ are isomorphic to the trivial bundle $\mathcal{O} \oplus \mathcal{O}$. This is the "jump" from an unstable bundle to a semistable one. This jump is the geometric reason why the automorphisms do not lift and why the crude functor is not well-behaved.
->   3 Conclusion
->   The local deformation functor $F$ (which keeps track of the isomorphism to the special fiber) for $F_0 = \mathcal{O}(-1) \oplus \mathcal{O}(1)$ on $\mathbb{P}^1_k$ is miniversal. It is represented by a smooth, one-dimensional formal scheme, $\text{Spf} k[[t]]$.
->   However, the crude local functor $F_1$ (which only considers isomorphism classes of fibers) is not miniversal. Its tangent space is not a vector space, which violates a necessary condition (H3) of Schlessinger's criterion. This example highlights the importance of distinguishing between these two types of functors and shows how non-trivial automorphism groups can obstruct the existence of a well-behaved moduli space.
+> **A**：随着 Agent 技术与联网搜索能力的普及，如果您有解决此类问题的需求，与其向一个“知识更丰富”的模型提问，不如使用可以灵活上网搜索的 Agent 来解决此类问题。
 
+> **Q：题库泄露导致模型刷分怎么办？**
+>
+> **A**：那真是我们的荣幸。不过，本项目仍然会把题目分为**公开题库**和**私有题库**两部分。如果一个模型在公开题库和私有题库的表现差距过大，我们会明确指出其“刷分”现象。
 
+## 🤝 投稿需求 (Contribution)
 
+我们需要您提供：
+1.  **题目与标准答案**：清晰的问题描述及对应的正确解答。
+2.  **考察点说明**：说明该题目主要考察 LLM 的哪一项能力。
+3.  **裁判标准**：为了满足自动化评测需求，我们需要一个裁判 LLM 能对照标准答案判断回答问题的模型的对错。
+    - ❌ **不可**是纯粹的证明题。
+    - ❌ **不可**是没有标准答案的发散性问题（难以判断“对错”）。
 
+---
 
+### 📝 题目示例 (Example)
 
+**Question (Final-test 难度，Gemini 正确作答率约 30%)**
 
+> Whether the local deformation functor of Sheaf $O(-1) \oplus O(1)$ in $\mathbb{P}^1_k$ is miniversal? How about the crude deformation functor $F_1$?
+
+#### Analysis
+
+> **1. Problem Statement**
+>
+> Let $k$ be an algebraically closed field. We study the local deformations of the vector bundle $F_0 = \mathcal{O}_{\mathbb{P}^1}(-1) \oplus \mathcal{O}_{\mathbb{P}^1}(1)$ on the projective line $X_0 = \mathbb{P}^1_k$.
+> ...
+>
+> *(See full analysis in `数理能力基准测试题库/final-test/001-sheaf-deformation-functor/README.md`)*
+>
+> **Conclusion**
+> The local deformation functor $F$ ... is **miniversal**.
+> However, the crude local functor $F_1$ ... is **not miniversal**.
