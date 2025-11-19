@@ -1,0 +1,25 @@
+test:
+  - 
+    provider: openai
+    api_key: sk-your-openai-api-key-here
+    base_url: https://api.openai.com/v1
+    model_name: gpt-4o
+  - 
+    provider: anthropic
+    api_key: sk-ant-your-anthropic-api-key-here
+    base_url: https://api.anthropic.com
+    model_name: claude-3-5-sonnet-20241022
+  -
+    provider: doubao
+    api_key: your-doubao-api-key-here
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    model_name: your-model-endpoint-id
+    
+retry:
+  max_attempts: 3
+  delay: 10.0
+
+
+
+
+
