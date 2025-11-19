@@ -1,4 +1,3 @@
-import json
 import os
 import yaml
 from datetime import datetime
@@ -22,10 +21,9 @@ def load_yaml_config(filepath: str) -> Dict[str, Any]:
     with open(filepath, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
-def load_json_data(filepath: str) -> List[Dict[str, Any]]:
+def load_yaml_data(filepath: str) -> List[Dict[str, Any]]:
     """
-    加载JSON数据文件
+    加载YAML数据文件（列表）
     
     Args:
         filepath: 数据文件路径
@@ -34,12 +32,11 @@ def load_json_data(filepath: str) -> List[Dict[str, Any]]:
         List[Dict[str, Any]]: 数据列表
     """
     with open(filepath, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
+        return yaml.safe_load(f)
 
 def validate_indicators(questions: List[Dict[str, Any]], indicators_data: List[Dict[str, Any]]) -> bool:
     """
-    验证 questions.json 中的所有 indicators 是否在 indicators.json 中定义
+    验证 questions.yaml 中的所有 indicators 是否在 indicators.yaml 中定义
     
     Args:
         questions: 题目列表
@@ -78,7 +75,7 @@ def validate_indicators(questions: List[Dict[str, Any]], indicators_data: List[D
     if has_error:
         L.error("=" * 60)
         L.error("验证失败：存在未定义的 indicators")
-        L.error("请检查 data/questions.json 和 data/indicators.json")
+        L.error("请检查 data/questions.yaml 和 data/indicators.yaml")
         L.error("=" * 60)
         return False
 
@@ -154,12 +151,12 @@ def save_final_results(
         "results": results
     }
     
-    # 保存文件
-    filename = f"{timestamp}.json"
+    # 保存文件（YAML）
+    filename = f"{timestamp}.yaml"
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(final_output, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(final_output, f, allow_unicode=True, sort_keys=False)
     
     L.info(f"最终结果已保存: {filepath}")
 
@@ -200,8 +197,8 @@ def main():
         L.info(f"评判模型: {judge_config['model_name']}")
         
         # 2. 加载题目数据和指标数据
-        questions = load_json_data("data/questions.json")
-        indicators_data = load_json_data("data/indicators.json")
+        questions = load_yaml_data("data/questions.yaml")
+        indicators_data = load_yaml_data("data/indicators.yaml")
         L.info(f"题目数量: {len(questions)}")
         
         # 3. 验证 indicators

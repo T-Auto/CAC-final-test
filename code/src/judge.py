@@ -1,7 +1,7 @@
 """
 评判模块 - 使用评判模型对答案进行打分
 """
-import json
+import yaml
 import os
 import re
 from typing import Dict, Any, List
@@ -55,9 +55,9 @@ def build_judge_prompt(
         indicators_text_list.append(f"  - **{indicator_name}**: {description}")
     indicators_text = "\n".join(indicators_text_list)
     
-    # 构建评分字段列表（注意：不再包含 final_score，且最后一项没有逗号）
-    score_fields_list = [f'"{name}": <{name}得分>' for name in indicators]
-    score_fields = ",\n        ".join(score_fields_list)
+    # 构建评分字段列表（YAML，不包含 final_score）
+    score_fields_list = [f"  {name}: <{name}得分>" for name in indicators]
+    score_fields = "\n".join(score_fields_list)
     
     # 读取题目与标准答案 Markdown
     qid = question["id"]
@@ -83,7 +83,7 @@ def build_judge_prompt(
 
 def parse_judgment_response(response: str, indicators: List[str] = None) -> Dict[str, Any]:
     """
-    解析评判响应，提取JSON格式的评分结果，并自动计算 final_score
+    解析评判响应，提取YAML格式的评分结果，并自动计算 final_score
     
     Args:
         response: 模型响应
@@ -92,103 +92,69 @@ def parse_judgment_response(response: str, indicators: List[str] = None) -> Dict
     Returns:
         Dict[str, Any]: 解析后的评分结果（包含自动计算的 final_score）
     """
-    def safe_json_loads(json_str: str) -> Dict[str, Any]:
-        """安全地加载JSON，处理反斜杠转义问题"""
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            L.warning(f"JSON解析失败，尝试修复转义字符: {str(e)}")
-            # 尝试修复常见的转义问题
-            # 方法1: 使用 raw string decode (处理LaTeX中的反斜杠)
-            try:
-                # 将单反斜杠替换为双反斜杠(但要小心已经转义的情况)
-                fixed_str = json_str.replace('\\', '\\\\').replace('\\\\\\\\', '\\\\')
-                # 还原JSON标准转义序列
-                for escape_seq in ['\\\\n', '\\\\r', '\\\\t', '\\\\b', '\\\\f', '\\\\"', '\\\\/', '\\\\\\\\']:
-                    if escape_seq in fixed_str:
-                        fixed_str = fixed_str.replace(escape_seq, escape_seq[1:])
-                return json.loads(fixed_str)
-            except json.JSONDecodeError:
-                pass
-            
-            # 方法2: 使用 ast.literal_eval 的变体
-            try:
-                import ast
-                # 将 JSON 转换为 Python 字面量格式
-                fixed_str = json_str.replace('true', 'True').replace('false', 'False').replace('null', 'None')
-                result = ast.literal_eval(fixed_str)
-                return result
-            except:
-                pass
-            
-            # 方法3: 手动解析 (最后的备选方案)
-            L.error(f"所有JSON修复尝试都失败，返回原始内容")
-            raise e
-    
+    # 提取 YAML 文本（优先代码块）
+    yaml_match = re.search(r'```(?:yaml|yml)?\s*([\s\S]*?)\s*```', response, re.DOTALL)
+    yaml_text = yaml_match.group(1) if yaml_match else response
+
+    def try_load_yaml(text: str) -> Dict[str, Any]:
+        return yaml.safe_load(text)
+
+    def sanitize_unknown_backslashes(text: str) -> str:
+        # 将不被 YAML 双引号支持的反斜杠转义加倍，避免 \m、\g 等触发解析错误
+        return re.sub(r'\\(?![0abtnvfre"\\/N_LPuxU])', r'\\\\', text)
+
+    # 第一次尝试
     try:
-        # 尝试直接解析JSON
-        judgment = None
-        if response.strip().startswith("{"):
-            judgment = safe_json_loads(response)
-        
-        # 尝试从代码块中提取JSON
-        if not judgment:
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
-            if json_match:
-                judgment = safe_json_loads(json_match.group(1))
-        
-        # 尝试查找第一个完整的JSON对象
-        if not judgment:
-            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
-            if json_match:
-                judgment = safe_json_loads(json_match.group(0))
-        
-        # 无法解析
-        if not judgment:
-            L.warning("无法从响应中解析JSON格式，使用原始响应")
+        content = try_load_yaml(yaml_text)
+    except yaml.YAMLError as e:
+        # 失败后，对未知转义进行加倍，再次尝试
+        fixed_text = sanitize_unknown_backslashes(yaml_text)
+        try:
+            content = try_load_yaml(fixed_text)
+        except yaml.YAMLError as e2:
+            L.error(f"YAML解析失败: {str(e2)}")
             return {
                 "feedback": response,
                 "scores": {
                     "final_score": 0.0
                 }
             }
-        
-        # 计算 final_score（所有 indicators 的平均分）
-        if indicators and "scores" in judgment:
-            scores = judgment["scores"]
-            indicator_scores = []
-            
-            for indicator in indicators:
-                if indicator in scores:
-                    try:
-                        score_value = float(scores[indicator])
-                        indicator_scores.append(score_value)
-                    except (ValueError, TypeError):
-                        L.warning(f"指标 {indicator} 的分数无法转换为数字: {scores[indicator]}")
-            
-            if indicator_scores:
-                # 计算平均分，保留两位小数
-                final_score = round(sum(indicator_scores) / len(indicator_scores), 2)
-                judgment["scores"]["final_score"] = final_score
-                L.debug(f"自动计算 final_score: {indicator_scores} -> {final_score}")
-            else:
-                L.warning("没有找到有效的指标分数，final_score 设为 0.0")
-                judgment["scores"]["final_score"] = 0.0
-        else:
-            # 如果没有提供 indicators 或 scores 字段，尝试保留原有的 final_score
-            if "scores" in judgment and "final_score" not in judgment["scores"]:
-                judgment["scores"]["final_score"] = 0.0
-        
-        return judgment
-        
-    except json.JSONDecodeError as e:
-        L.error(f"JSON解析失败: {str(e)}")
+
+    if not isinstance(content, dict):
+        # 内容不是映射，回退为原文
         return {
             "feedback": response,
             "scores": {
                 "final_score": 0.0
             }
         }
+
+    # 确保基本结构存在
+    if "scores" not in content or not isinstance(content["scores"], dict):
+        content["scores"] = {}
+
+    # 计算 final_score（所有 indicators 的平均分）
+    if indicators:
+        scores = content["scores"]
+        indicator_scores = []
+        
+        for indicator in indicators:
+            if indicator in scores:
+                try:
+                    score_value = float(scores[indicator])
+                    indicator_scores.append(score_value)
+                except (ValueError, TypeError):
+                    L.warning(f"指标 {indicator} 的分数无法转换为数字: {scores[indicator]}")
+        
+        if indicator_scores:
+            final_score = round(sum(indicator_scores) / len(indicator_scores), 2)
+            content["scores"]["final_score"] = final_score
+            L.debug(f"自动计算 final_score: {indicator_scores} -> {final_score}")
+        else:
+            L.warning("没有找到有效的指标分数，final_score 设为 0.0")
+            content["scores"]["final_score"] = 0.0
+
+    return content
 
 
 def judge_answer(
@@ -266,7 +232,7 @@ def save_input(
     # 清理模型名称
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
 
-    filename = f"{timestamp}_judgment_{safe_model_name}_{question_id}.json"
+    filename = f"{timestamp}_judgment_{safe_model_name}_{question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
 
     data = {
@@ -276,7 +242,7 @@ def save_input(
     }
 
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
 
     L.debug(f"已保存发送给模型的prompt: {filepath}")
 
@@ -290,7 +256,7 @@ def save_raw_judgment(
     output_dir: str = "results/raw/judge"
 ):
     """
-    保存原始评判结果到JSON文件
+    保存原始评判结果到YAML文件
     
     Args:
         timestamp: 时间戳
@@ -306,7 +272,7 @@ def save_raw_judgment(
     # 清理模型名称
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
     
-    filename = f"{timestamp}_judgment_{safe_model_name}_{question_id}.json"
+    filename = f"{timestamp}_judgment_{safe_model_name}_{question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
     
     data = {
@@ -319,20 +285,20 @@ def save_raw_judgment(
     }
     
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
     
     L.debug(f"已保存原始评判: {filepath}")
 
 
 def load_indicators() -> Dict[str, str]:
     """
-    加载 indicators.json 并构建映射表
+    加载 indicators.yaml 并构建映射表
     
     Returns:
         Dict[str, str]: {indicator_name: description}
     """
-    with open("data/indicators.json", 'r', encoding='utf-8') as f:
-        indicators_data = json.load(f)
+    with open("data/indicators.yaml", 'r', encoding='utf-8') as f:
+        indicators_data = yaml.safe_load(f)
     
     # 构建扁平化的映射表
     indicators_map = {}

@@ -1,0 +1,22 @@
+ - category_id: code
+   indicators:
+     ans_correct: "答案正确性 - 代码能否正确运行并得到预期结果"
+     code_quality: "代码质量 - 代码风格、注释、可读性"
+     efficiency: "运行效率 - 算法时间和空间复杂度"
+     robustness: "鲁棒性 - 异常处理和边界情况考虑"
+ - category_id: theory
+   indicators:
+     completeness: "回答完整性 - 是否涵盖问题的所有方面"
+     accuracy: "准确性 - 概念和信息是否准确无误"
+     clarity: "表达清晰度 - 逻辑是否清晰、表述是否易懂"
+     depth: "深度 - 回答是否有深度和见解"
+ - category_id: design
+   indicators:
+     ans_correct: "答案正确性 - 设计方案是否正确"
+     example_quality: "示例质量 - 举例是否恰当、清晰"
+     completeness: "回答完整性 - 是否考虑了各种场景"
+     practicality: "实用性 - 方案是否具有实际应用价值"
+ - category_id: easy
+   indicators:
+     correct_max_1: "答案是否正确，满分1分"
+

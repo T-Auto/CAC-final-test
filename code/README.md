@@ -23,11 +23,7 @@ pip install -r requirements.txt
 
 复制配置示例文件：
 
-将 `providers/test.yaml.example` 复制为 `providers/test.yaml`；
-将 `providers/judge.yaml.example` 复制为 `providers/judge.yaml`；
-
-
-在 `providers/test.yaml` 中填写被测模型的 API 信息：
+将 `providers/test.yaml.example` 复制为 `providers/test.yaml`，并填写被测模型的 API 信息：
 
 ```yaml
 test:
@@ -47,7 +43,7 @@ retry:
   delay: 10.0
 ```
 
-在 `providers/judge.yaml` 中填写评判模型的 API 信息：
+将 `providers/judge.yaml.example` 复制为 `providers/judge.yaml`，并填写评判模型的 API 信息：
 
 ```yaml
 judge:
@@ -67,50 +63,35 @@ judge:
 
 #### 2.2 配置题库信息
 
-1. 在 `data\indicators.json` 中配置评分指标信息，格式为：
+1. 在 `data\indicators.yaml` 中配置评分指标信息，格式为：
 
-```json
-[
-    {
-        "category_id": "code", // 评分指标分类
-        "indicators": {
-            // 评分指标名称 - 评分指标描述
-            "ans_correct": "答案正确性 - 代码能否正确运行并得到预期结果",
-            "code_quality": "代码质量 - 代码风格、注释、可读性",
-            "efficiency": "运行效率 - 算法时间和空间复杂度",
-            "robustness": "鲁棒性 - 异常处理和边界情况考虑"
-        }
-    },
-    {
-        "category_id": "theory",
-        "indicators": {
-            "completeness": "回答完整性 - 是否涵盖问题的所有方面",
-            "accuracy": "准确性 - 概念和信息是否准确无误",
-            "clarity": "表达清晰度 - 逻辑是否清晰、表述是否易懂",
-            "depth": "深度 - 回答是否有深度和见解"
-        }
-    },
-    ...
-]
+```yaml
+- category_id: code
+  indicators:
+    ans_correct: "答案正确性 - 代码能否正确运行并得到预期结果"
+    code_quality: "代码质量 - 代码风格、注释、可读性"
+    efficiency: "运行效率 - 算法时间和空间复杂度"
+    robustness: "鲁棒性 - 异常处理和边界情况考虑"
+- category_id: theory
+  indicators:
+    completeness: "回答完整性 - 是否涵盖问题的所有方面"
+    accuracy: "准确性 - 概念和信息是否准确无误"
+    clarity: "表达清晰度 - 逻辑是否清晰、表述是否易懂"
+    depth: "深度 - 回答是否有深度和见解"
+# ...
 ```
 
-2. 在 `data\questions.json` 中配置题目元数据（不再保存题干与标准答案文本），格式为：
+2. 在 `data\questions.yaml` 中配置题目元数据（不再保存题干与标准答案文本），格式为：
 
-```json
-[
-    {
-        "id": "题目id，使用英文、数字、短横杠、下划线",
-        "question_brief": "题目简介",
-        "scoring_std": {
-            "max_score": 10, // 满分
-            "indicators": [  // 本题使用的评分指标
-                "correct_max_1",
-                "code_quality"
-            ]
-        }
-    },
-    ...
-]
+```yaml
+- id: "题目id，使用英文、数字、短横杠、下划线"
+  question_brief: "题目简介"
+  scoring_std:
+    max_score: 10  # 满分
+    indicators:    # 本题使用的评分指标
+      - "correct_max_1"
+      - "code_quality"
+# ...
 ```
 
 3. 将题目的原始 Markdown 文件放置于以下路径（以题目 id 为目录名）：
@@ -138,8 +119,8 @@ python ./main.py
 
 评测完成后，结果保存在 `results/` 目录：
 
-- `results/YYYYMMDD_HHMMSS.json` - 汇总结果
+- `results/YYYYMMDD_HHMMSS.yaml` - 汇总结果（YAML）
 - `results/raw/test/` - 模型原始答案
-- `results/raw/judge/` - 评判详细结果
+- `results/raw/judge/` - 评判详细结果（YAML）
 
 日志文件保存在 `logs/` 目录。

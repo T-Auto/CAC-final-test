@@ -1,7 +1,7 @@
 """
 提问模块 - 向被测模型发起提问并收集答案
 """
-import json
+import yaml
 import os
 import time
 from datetime import datetime
@@ -87,12 +87,12 @@ def save_input(
     output_dir: str = "results/raw/input_test"
 ):
     """
-    保存发送给模型的prompt
+    保存发送给模型的prompt（YAML）
     """
     os.makedirs(output_dir, exist_ok=True)
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
 
-    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.json"
+    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
 
     data = {
@@ -102,7 +102,7 @@ def save_input(
     }
 
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
 
     L.debug(f"已保存发送给模型的prompt: {filepath}")
 
@@ -114,7 +114,7 @@ def save_raw_answer(
     output_dir: str = "results/raw/test"
 ):
     """
-    保存原始答案到JSON文件
+    保存原始答案到YAML文件
     
     Args:
         timestamp: 时间戳
@@ -128,7 +128,7 @@ def save_raw_answer(
     # 清理模型名称，移除可能导致文件名问题的字符
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
     
-    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.json"
+    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
     
     data = {
@@ -138,7 +138,7 @@ def save_raw_answer(
     }
     
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
     
     L.debug(f"已保存原始答案: {filepath}")
 

@@ -35,9 +35,9 @@ env/
 
 # Project specific
 logs/*.log
-results/*.json
-results/raw/test/*.json
-results/raw/judge/*.json
+results/*.yaml
+results/raw/test/*.yaml
+results/raw/judge/*.yaml
 providers/test.yaml
 providers/judge.yaml
 
@@ -47,6 +47,8 @@ Thumbs.db
 
 # Environment variables
 .env
+
+results/
 logs/
 providers/judge.yaml
 providers/test.yaml
