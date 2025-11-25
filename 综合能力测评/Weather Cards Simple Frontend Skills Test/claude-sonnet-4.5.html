@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Cards - Immersive Experience</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1400px;
+        }
+
+        .weather-card {
+            width: 280px;
+            height: 400px;
+            border-radius: 25px;
+            padding: 30px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+            filter: blur(20px);
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: -1;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-20px) scale(1.05);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .weather-card:hover::before {
+            opacity: 0.8;
+        }
+
+        .sunny {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .windy {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .rainstorm {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .snowstorm {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .icon-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 30px;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .weather-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+        }
+
+        .card-details {
+            text-align: center;
+            color: white;
+        }
+
+        .temperature {
+            font-size: 48px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .description {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animated particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        /* Sunny particles */
+        .sunny .particle {
+            width: 4px;
+            height: 4px;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        /* Windy particles */
+        .windy .particle {
+            width: 30px;
+            height: 2px;
+            border-radius: 2px;
+            animation: windBlow 3s linear infinite;
+        }
+
+        /* Rain particles */
+        .rainstorm .particle {
+            width: 2px;
+            height: 15px;
+            border-radius: 2px;
+            animation: rain 1s linear infinite;
+        }
+
+        /* Snow particles */
+        .snowstorm .particle {
+            width: 6px;
+            height: 6px;
+            animation: snow 4s linear infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes sparkle {
+            0%, 100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes windBlow {
+            0% {
+                left: -30px;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                left: 100%;
+                opacity: 0;
+            }
+        }
+
+        @keyframes rain {
+            0% {
+                top: -20px;
+                opacity: 1;
+            }
+            100% {
+                top: 100%;
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes snow {
+            0% {
+                top: -10px;
+                opacity: 1;
+            }
+            100% {
+                top: 100%;
+                opacity: 0.3;
+                transform: translateX(20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .weather-card {
+                width: 100%;
+                max-width: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sunny Card -->
+        <div class="weather-card sunny">
+            <div class="particles" id="sunny-particles"></div>
+            <div class="card-header">
+                <h2 class="card-title">Sunny</h2>
+            </div>
+            <div class="icon-container">
+                <div class="weather-icon">☀️</div>
+            </div>
+            <div class="card-details">
+                <div class="temperature">28°C</div>
+                <p class="description">Perfect day for outdoor activities with clear blue skies</p>
+            </div>
+        </div>
+
+        <!-- Windy Card -->
+        <div class="weather-card windy">
+            <div class="particles" id="windy-particles"></div>
+            <div class="card-header">
+                <h2 class="card-title">Windy</h2>
+            </div>
+            <div class="icon-container">
+                <div class="weather-icon">💨</div>
+            </div>
+            <div class="card-details">
+                <div class="temperature">22°C</div>
+                <p class="description">Breezy conditions with gentle winds throughout the day</p>
+            </div>
+        </div>
+
+        <!-- Rainstorm Card -->
+        <div class="weather-card rainstorm">
+            <div class="particles" id="rain-particles"></div>
+            <div class="card-header">
+                <h2 class="card-title">Rainstorm</h2>
+            </div>
+            <div class="icon-container">
+                <div class="weather-icon">⛈️</div>
+            </div>
+            <div class="card-details">
+                <div class="temperature">18°C</div>
+                <p class="description">Heavy rainfall expected with thunderstorms</p>
+            </div>
+        </div>
+
+        <!-- Snowstorm Card -->
+        <div class="weather-card snowstorm">
+            <div class="particles" id="snow-particles"></div>
+            <div class="card-header">
+                <h2 class="card-title">Snowstorm</h2>
+            </div>
+            <div class="icon-container">
+                <div class="weather-icon">❄️</div>
+            </div>
+            <div class="card-details">
+                <div class="temperature">-5°C</div>
+                <p class="description">Winter wonderland with heavy snowfall</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create particles for each weather type
+        function createParticles(containerId, count, animationDelay) {
+            const container = document.getElementById(containerId);
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * animationDelay + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Initialize particles
+        createParticles('sunny-particles', 20, 2);
+        createParticles('windy-particles', 15, 3);
+        createParticles('rain-particles', 50, 1);
+        createParticles('snow-particles', 30, 4);
+
+        // Add interactive sound effect on hover (optional)
+        const cards = document.querySelectorAll('.weather-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.filter = 'brightness(1.1)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.filter = 'brightness(1)';
+            });
+        });
+    </script>
+</body>
+</html>
