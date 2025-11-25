@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+logs/*.log
+results/*.yaml
+results/raw/test/*.yaml
+results/raw/judge/*.yaml
+providers/test.yaml
+providers/judge.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+results/
+logs/
+providers/judge.yaml
+providers/test.yaml
+
+# AI Context
+AGENTS.md

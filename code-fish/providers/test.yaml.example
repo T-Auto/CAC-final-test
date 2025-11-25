@@ -1,0 +1,36 @@
+test:
+  - 
+    provider: openai
+    api_key: sk-your-openai-api-key-here
+    base_url: https://api.openai.com/v1
+    model_name: gpt-4o
+    # 模型参数配置（可选）
+    params:
+      temperature: 0.3      # 评测建议用较低值
+      max_tokens: 8192
+      # top_p: 0.95
+      # presence_penalty: 0.0
+      # frequency_penalty: 0.0
+      # timeout: 900        # 请求超时（秒）
+  - 
+    provider: anthropic
+    api_key: sk-ant-your-anthropic-api-key-here
+    base_url: https://api.anthropic.com
+    model_name: claude-3-5-sonnet-20241022
+    params:
+      temperature: 0.3
+      max_tokens: 8192
+      # top_p: 0.95
+      # top_k: 40
+  -
+    provider: doubao
+    api_key: your-doubao-api-key-here
+    base_url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+    model_name: your-model-endpoint-id
+    params:
+      temperature: 0.3
+      max_tokens: 8192
+    
+retry:
+  max_attempts: 3
+  delay: 10.0
