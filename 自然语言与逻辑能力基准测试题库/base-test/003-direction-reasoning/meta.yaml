@@ -1,0 +1,9 @@
+id: logic-base-003
+brief: 方向推理问题
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - clarity

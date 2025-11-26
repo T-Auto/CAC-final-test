@@ -1,0 +1,9 @@
+id: logic-base-001
+brief: 年龄倍数推理问题
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - clarity

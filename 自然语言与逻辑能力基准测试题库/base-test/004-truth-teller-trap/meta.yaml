@@ -1,0 +1,9 @@
+id: logic-base-004
+brief: 说谎者悖论陷阱题
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - completeness

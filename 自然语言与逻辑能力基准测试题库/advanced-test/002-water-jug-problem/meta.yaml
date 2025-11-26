@@ -1,0 +1,9 @@
+id: logic-adv-002
+brief: 水壶倒水问题
+category: logic
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - completeness

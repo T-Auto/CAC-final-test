@@ -1,0 +1,9 @@
+id: logic-base-002
+brief: 敲钟间隔陷阱题
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - clarity

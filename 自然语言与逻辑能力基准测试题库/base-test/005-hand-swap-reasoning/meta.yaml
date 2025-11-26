@@ -1,0 +1,8 @@
+id: logic-base-005
+brief: 双手交换推理题
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy

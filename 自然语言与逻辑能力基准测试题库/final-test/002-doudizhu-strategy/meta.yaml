@@ -1,0 +1,10 @@
+id: logic-final-002
+brief: 两人斗地主必赢策略分析
+category: logic
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - completeness
+    - depth

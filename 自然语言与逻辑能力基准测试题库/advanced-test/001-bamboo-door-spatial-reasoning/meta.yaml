@@ -1,0 +1,9 @@
+id: logic-adv-001
+brief: 竹竿过门空间推理题
+category: logic
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - depth
