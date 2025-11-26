@@ -1,14 +1,13 @@
 """
 提问模块 - 向被测模型发起提问并收集答案
+支持新的标准化题目格式（prompt 直接从题目对象获取）
 """
 import yaml
 import os
 import time
-from datetime import datetime
 from typing import Dict, Any, List
 from src.adaptors import create_adaptor, BaseLLMAdaptor
 from src import logger as L
-from src.md2str import md_to_string
 
 
 def load_prompt_template(template_path: str) -> str:
@@ -37,7 +36,7 @@ def ask_question(
     
     Args:
         adaptor: LLM适配器
-        question: 题目信息
+        question: 题目信息（包含 prompt 字段）
         prompt_template: 提示词模板
         retry_config: 重试配置
         timestamp: 时间戳
@@ -45,16 +44,22 @@ def ask_question(
     Returns:
         str: 模型的答案
     """
-    # 读取题目 Markdown 并构建提示词
     question_id = question["id"]
-    question_md_path = os.path.join("data", "questions", question_id, "question.md")
-    try:
-        question_text = md_to_string(question_md_path)
-    except Exception as e:
-        raise Exception(f"读取题目Markdown失败 [{question_id}]: {e}")
+    
+    # 新格式：直接从 question 对象获取 prompt
+    if "prompt" in question:
+        question_text = question["prompt"]
+    else:
+        # 兼容旧格式：从文件读取
+        from src.md2str import md_to_string
+        question_md_path = os.path.join("data", "questions", question_id, "question.md")
+        try:
+            question_text = md_to_string(question_md_path)
+        except Exception as e:
+            raise Exception(f"读取题目失败 [{question_id}]: {e}")
     
     prompt = prompt_template.replace("{question}", question_text)
-    save_input(timestamp, adaptor.model_name, question["id"], prompt)
+    save_input(timestamp, adaptor.model_name, question_id, prompt)
 
     # 重试机制
     max_attempts = retry_config.get("max_attempts", 3)
@@ -63,9 +68,9 @@ def ask_question(
     last_error = None
     for attempt in range(1, max_attempts + 1):
         try:
-            L.info(f"向模型 {adaptor.model_name} 提问 (尝试 {attempt}/{max_attempts}): {question['id']}")
+            L.info(f"向模型 {adaptor.model_name} 提问 (尝试 {attempt}/{max_attempts}): {question_id}")
             answer = adaptor.chat(prompt)
-            L.info(f"成功获取答案: {question['id']}")
+            L.info(f"成功获取答案: {question_id}")
             return answer
         except Exception as e:
             last_error = e
@@ -74,10 +79,10 @@ def ask_question(
                 L.info(f"等待 {delay} 秒后重试...")
                 time.sleep(delay)
     
-    # 所有重试都失败
     error_msg = f"提问失败，已重试 {max_attempts} 次: {str(last_error)}"
     L.error(error_msg)
     raise Exception(error_msg)
+
 
 def save_input(
     timestamp: str,
@@ -86,13 +91,12 @@ def save_input(
     prompt: str,
     output_dir: str = "results/raw/input_test"
 ):
-    """
-    保存发送给模型的prompt（YAML）
-    """
+    """保存发送给模型的prompt"""
     os.makedirs(output_dir, exist_ok=True)
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+    safe_question_id = question_id.replace("/", "_").replace("\\", "_")
 
-    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.yaml"
+    filename = f"{timestamp}_output_{safe_model_name}_{safe_question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
 
     data = {
@@ -106,6 +110,7 @@ def save_input(
 
     L.debug(f"已保存发送给模型的prompt: {filepath}")
 
+
 def save_raw_answer(
     timestamp: str,
     model_name: str,
@@ -113,22 +118,12 @@ def save_raw_answer(
     answer: str,
     output_dir: str = "results/raw/test"
 ):
-    """
-    保存原始答案到YAML文件
-    
-    Args:
-        timestamp: 时间戳
-        model_name: 模型名称
-        question_id: 题目ID
-        answer: 答案内容
-        output_dir: 输出目录
-    """
+    """保存原始答案到YAML文件"""
     os.makedirs(output_dir, exist_ok=True)
-    
-    # 清理模型名称，移除可能导致文件名问题的字符
     safe_model_name = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+    safe_question_id = question_id.replace("/", "_").replace("\\", "_")
     
-    filename = f"{timestamp}_output_{safe_model_name}_{question_id}.yaml"
+    filename = f"{timestamp}_output_{safe_model_name}_{safe_question_id}.yaml"
     filepath = os.path.join(output_dir, filename)
     
     data = {
@@ -164,16 +159,13 @@ def process_questions(
     # 加载提示词模板
     prompt_template = load_prompt_template("prompts/question.md")
     
-    # 存储所有答案
     all_answers = {}
     
-    # 遍历所有被测模型
     for model_config in test_models:
         model_name = model_config["model_name"]
         L.info(f"开始测试模型: {model_name}")
         
         try:
-            # 创建适配器（支持 params 配置）
             adaptor = create_adaptor(
                 provider=model_config["provider"],
                 api_key=model_config["api_key"],
@@ -182,33 +174,24 @@ def process_questions(
                 params=model_config.get("params")
             )
             
-            # 验证配置
             if not adaptor.validate_config():
                 L.error(f"模型配置无效: {model_name}")
                 continue
             
-            # 存储该模型的所有答案
             model_answers = {}
             
-            # 遍历所有题目（串行执行）
             for question in questions:
                 question_id = question["id"]
                 
                 try:
-                    # 提问并获取答案
                     answer = ask_question(adaptor, question, prompt_template, retry_config, timestamp)
-                    
-                    # 保存原始答案
                     save_raw_answer(timestamp, model_name, question_id, answer)
-                    
-                    # 存储到内存
                     model_answers[question_id] = answer
                     
                 except Exception as e:
                     L.error(f"处理题目失败 [{model_name}][{question_id}]: {str(e)}")
                     model_answers[question_id] = f"[ERROR] {str(e)}"
             
-            # 存储该模型的所有答案
             all_answers[model_name] = model_answers
             L.info(f"完成测试模型: {model_name} ({len(model_answers)}/{len(questions)} 题)")
             

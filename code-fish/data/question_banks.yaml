@@ -10,6 +10,10 @@ banks:
     category: code
     name: 代码能力基准测试
     
+  - path: ../自然语言与逻辑能力基准测试题库
+    category: logic
+    name: 自然语言与逻辑能力基准测试
+    
   - path: ../综合能力测评
     category: comprehensive
     name: 综合能力测评

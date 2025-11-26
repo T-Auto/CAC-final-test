@@ -1,3 +1,7 @@
+"""
+CAC 评测系统主程序
+支持新的标准化题目格式（meta.yaml + prompt.md + reference.md）
+"""
 import os
 import yaml
 from datetime import datetime
@@ -6,80 +10,19 @@ from typing import Dict, Any, List
 from src import logger as L
 from src.ask import process_questions
 from src.judge import process_judgments
+from src.question_loader import load_questions_from_banks, validate_questions
 
 
 def load_yaml_config(filepath: str) -> Dict[str, Any]:
-    """
-    加载YAML配置文件
-    
-    Args:
-        filepath: 配置文件路径
-        
-    Returns:
-        Dict[str, Any]: 配置内容
-    """
+    """加载YAML配置文件"""
     with open(filepath, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
+
 
 def load_yaml_data(filepath: str) -> List[Dict[str, Any]]:
-    """
-    加载YAML数据文件（列表）
-    
-    Args:
-        filepath: 数据文件路径
-        
-    Returns:
-        List[Dict[str, Any]]: 数据列表
-    """
+    """加载YAML数据文件（列表）"""
     with open(filepath, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
-def validate_indicators(questions: List[Dict[str, Any]], indicators_data: List[Dict[str, Any]]) -> bool:
-    """
-    验证 questions.yaml 中的所有 indicators 是否在 indicators.yaml 中定义
-    
-    Args:
-        questions: 题目列表
-        indicators_data: indicators 数据列表
-        
-    Returns:
-        bool: 验证是否通过
-    """
-    # 构建所有可用的 indicator 集合
-    all_indicators = set()
-    for category in indicators_data:
-        category_indicators = category.get("indicators", {})
-        all_indicators.update(category_indicators.keys())
-    
-    L.info(f"已加载 {len(all_indicators)} 个可用评分指标")
-    
-    # 检查每个题目的 indicators
-    has_error = False
-    for question in questions:
-        question_id = question["id"]
-        scoring_std = question.get("scoring_std", {})
-        indicators = scoring_std.get("indicators", [])
-        
-        # 检查 indicators 是否为数组
-        if not isinstance(indicators, list):
-            L.error(f"题目 [{question_id}] 的 indicators 不是数组类型: {type(indicators)}")
-            has_error = True
-            continue
-        
-        # 检查每个 indicator 是否定义
-        for indicator in indicators:
-            if indicator not in all_indicators:
-                L.error(f"题目 [{question_id}] 使用了未定义的 indicator: {indicator}")
-                has_error = True
-    
-    if has_error:
-        L.error("=" * 60)
-        L.error("验证失败：存在未定义的 indicators")
-        L.error("请检查 data/questions.yaml 和 data/indicators.yaml")
-        L.error("=" * 60)
-        return False
-
-    return True
 
 
 def save_final_results(
@@ -91,24 +34,10 @@ def save_final_results(
     all_judgments: Dict[str, Dict[str, Any]],
     output_dir: str = "results"
 ):
-    """
-    保存最终结果
-    
-    Args:
-        timestamp: 时间戳
-        test_models: 被测模型列表
-        judge_model: 评判模型名称
-        questions: 题目列表
-        all_answers: 所有模型的答案
-        all_judgments: 所有评判结果
-        output_dir: 输出目录
-    """
+    """保存最终结果"""
     os.makedirs(output_dir, exist_ok=True)
-    
-    # 创建题目映射
     questions_map = {q["id"]: q for q in questions}
     
-    # 构建结果数据
     results = {}
     
     for model_name in test_models:
@@ -117,7 +46,6 @@ def save_final_results(
         
         answers = all_answers[model_name]
         judgments = all_judgments.get(model_name, {})
-        
         model_results = {}
         
         for question_id, answer in answers.items():
@@ -127,10 +55,11 @@ def save_final_results(
             
             judgment = judgments.get(question_id, {})
             
-            # 构建单个结果
             result_item = {
                 "question_id": question_id,
-                "question_brief": question.get("question_brief", ""),
+                "question_brief": question.get("brief", ""),
+                "category": question.get("category", ""),
+                "difficulty": question.get("difficulty", ""),
                 "model_answer": answer,
                 "judgment": judgment.get("feedback", ""),
                 "score": {
@@ -143,15 +72,14 @@ def save_final_results(
         
         results[model_name] = model_results
     
-    # 构建最终输出
     final_output = {
         "timestamp": timestamp,
         "test_models": test_models,
         "judge_model": judge_model,
+        "total_questions": len(questions),
         "results": results
     }
     
-    # 保存文件（YAML）
     filename = f"{timestamp}.yaml"
     filepath = os.path.join(output_dir, filename)
     
@@ -164,11 +92,9 @@ def save_final_results(
 def main():
     """主函数"""
     try:
-        # 启用文件日志
         L.ENABLE_FILE = True
         L.reload_config()
         
-        # 生成时间戳
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # 1. 加载配置文件
@@ -193,22 +119,32 @@ def main():
         judge_config = judge_config_full["judge"]
         judge_retry_config = judge_config_full.get("retry", {"max_attempts": 3, "delay": 10.0})
         
-        L.info(f"被测模型: {test_models}")
+        L.info(f"被测模型: {[m['model_name'] for m in test_models]}")
         L.info(f"评判模型: {judge_config['model_name']}")
         
-        # 2. 加载题目数据和指标数据
-        questions = load_yaml_data("data/questions.yaml")
-        indicators_data = load_yaml_data("data/indicators.yaml")
-        L.info(f"题目数量: {len(questions)}")
+        # 2. 加载题目（新格式：从题库目录扫描）
+        L.info("=" * 60)
+        L.info("加载题目")
+        L.info("=" * 60)
         
-        # 3. 验证 indicators
+        questions = load_questions_from_banks()
+        
+        if not questions:
+            L.error("没有找到任何题目！请检查题库目录和 meta.yaml 文件")
+            return
+        
+        # 3. 验证评分指标
         L.info("=" * 60)
         L.info("验证评分指标")
         L.info("=" * 60)
-        if not validate_indicators(questions, indicators_data):
+        
+        indicators_data = load_yaml_data("data/indicators.yaml")
+        if not validate_questions(questions, indicators_data):
             L.error("程序终止：indicators 验证失败")
             return
         
+        L.info("✓ 所有题目验证通过")
+
         # 4. 向被测模型提问
         L.info("=" * 60)
         L.info("阶段 1: 向被测模型提问")
@@ -280,5 +216,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
