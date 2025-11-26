@@ -1,0 +1,22 @@
+# 题库配置文件
+# 定义各个题库的路径和类别
+
+banks:
+  - path: ../数理能力基准测试题库
+    category: math
+    name: 数理能力基准测试
+    
+  - path: ../代码能力基准测试题库
+    category: code
+    name: 代码能力基准测试
+    
+  - path: ../综合能力测评
+    category: comprehensive
+    name: 综合能力测评
+
+# 难度级别定义
+difficulty_levels:
+  - base        # 基础
+  - advanced    # 进阶
+  - final       # 终极
+  - final+      # 终极+

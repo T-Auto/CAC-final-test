@@ -1,0 +1,10 @@
+id: comp-002
+brief: 隐身战斗机 RCS 仿真与遗传算法优化
+category: comprehensive
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性
+    - code_quality   # 代码质量
+    - completeness   # 完整性

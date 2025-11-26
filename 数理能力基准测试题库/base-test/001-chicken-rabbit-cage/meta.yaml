@@ -1,0 +1,10 @@
+id: math-base-001
+brief: 鸡兔同笼经典问题
+category: math
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 解题过程完整性
+    - clarity        # 表达清晰度

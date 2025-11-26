@@ -1,0 +1,10 @@
+id: code-final-001
+brief: Deno API 代理脚本改进（UI + KV 持久化）
+category: code
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性
+    - code_quality   # 代码质量
+    - robustness     # 并发与错误处理
