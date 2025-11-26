@@ -1,0 +1,10 @@
+id: math-final-004
+brief: 矩形中5点构成三角形面积问题
+category: math
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 论证完整性
+    - depth          # 方法深度

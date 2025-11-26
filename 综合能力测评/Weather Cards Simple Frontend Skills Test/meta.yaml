@@ -1,0 +1,9 @@
+id: comp-001
+brief: 天气卡片前端技能测试
+category: comprehensive
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性
+    - code_quality   # 代码质量

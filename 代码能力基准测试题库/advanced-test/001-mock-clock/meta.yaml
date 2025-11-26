@@ -1,0 +1,9 @@
+id: code-adv-001
+brief: Mock Clock HTML/CSS 实现
+category: code
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性
+    - code_quality   # 代码质量

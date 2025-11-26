@@ -1,0 +1,10 @@
+id: code-adv-002
+brief: 实现 Trie 前缀树数据结构
+category: code
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性（通过测试用例）
+    - code_quality   # 代码质量
+    - efficiency     # 时间/空间复杂度

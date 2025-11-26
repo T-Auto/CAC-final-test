@@ -1,0 +1,10 @@
+id: code-base-001
+brief: 简单计算器网页应用
+category: code
+difficulty: base
+scoring_std:
+  max_score: 10
+  indicators:
+    - ans_correct    # 功能正确性
+    - code_quality   # 代码质量
+    - robustness     # 边界处理

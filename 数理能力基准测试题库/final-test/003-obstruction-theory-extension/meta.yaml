@@ -1,0 +1,10 @@
+id: math-final-003
+brief: 特定奇点的小扩张障碍类
+category: math
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 论证完整性
+    - depth          # 理论深度
