@@ -1,0 +1,17 @@
+# Serena MCP configuration
+.serena/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/

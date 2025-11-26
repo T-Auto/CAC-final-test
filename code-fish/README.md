@@ -1,126 +1,251 @@
-# CAC 评测系统
+# CAC 评测系统 (code-fish)
 
 一个用于自动化评测大语言模型（LLM）能力的 Python 程序。
+
+> ⚠️ **重构进行中**：正在迁移到新的题目格式（`meta.yaml` + `prompt.md` + `reference.md`）
+
+## 系统架构
+
+```mermaid
+flowchart TB
+    subgraph Input["📥 输入"]
+        QB[("题库<br/>meta.yaml<br/>prompt.md<br/>reference.md")]
+        TC["test.yaml<br/>被测模型配置"]
+        JC["judge.yaml<br/>评判模型配置"]
+    end
+
+    subgraph Core["⚙️ 核心流程"]
+        direction TB
+        LOAD["加载题目<br/>questions.yaml"]
+        VAL["验证评分指标<br/>indicators.yaml"]
+        
+        subgraph ASK["阶段1: 提问"]
+            A1["构建 prompt"]
+            A2["调用被测模型 API"]
+            A3["收集答案"]
+        end
+        
+        subgraph JUDGE["阶段2: 评判"]
+            J1["构建评判 prompt"]
+            J2["调用评判模型 API"]
+            J3["解析评分结果"]
+            J4["计算 final_score"]
+        end
+    end
+
+    subgraph Output["📤 输出"]
+        RAW["results/raw/<br/>原始答案 & 评判"]
+        FINAL["results/<br/>汇总结果 YAML"]
+        LOG["logs/<br/>运行日志"]
+    end
+
+    QB --> LOAD
+    TC --> ASK
+    JC --> JUDGE
+    LOAD --> VAL
+    VAL --> ASK
+    ASK --> JUDGE
+    A1 --> A2 --> A3
+    J1 --> J2 --> J3 --> J4
+    ASK --> RAW
+    JUDGE --> RAW
+    JUDGE --> FINAL
+    Core --> LOG
+```
+
+## 评测流程详解
+
+```mermaid
+sequenceDiagram
+    participant M as main.py
+    participant A as ask.py
+    participant J as judge.py
+    participant TM as 被测模型
+    participant JM as 评判模型
+
+    M->>M: 加载配置文件
+    M->>M: 加载题目 & 验证指标
+    
+    loop 每个被测模型
+        loop 每道题目
+            M->>A: process_questions()
+            A->>A: 读取 prompt.md
+            A->>A: 构建完整 prompt
+            A->>TM: 发送请求
+            TM-->>A: 返回答案
+            A->>A: 保存原始答案
+        end
+    end
+
+    loop 每个被测模型的答案
+        loop 每道题目
+            M->>J: process_judgments()
+            J->>J: 读取 reference.md
+            J->>J: 构建评判 prompt
+            J->>JM: 发送请求
+            JM-->>J: 返回评分 YAML
+            J->>J: 解析 & 计算 final_score
+            J->>J: 保存评判结果
+        end
+    end
+
+    M->>M: 汇总 & 保存最终结果
+```
 
 ## 快速开始
 
 ### 1. 环境准备
 
 ```bash
+cd code-fish
+
 # 创建虚拟环境
 python -m venv .venv
 
-# 激活虚拟环境
+# 激活虚拟环境 (Windows PowerShell)
 .\.venv\Scripts\Activate.ps1
 
 # 安装依赖
 pip install -r requirements.txt
 ```
 
-### 2. 配置
+### 2. 配置模型
 
-#### 2.1 配置模型提供商
-
-复制配置示例文件：
-
-将 `providers/test.yaml.example` 复制为 `providers/test.yaml`，并填写被测模型的 API 信息：
+#### 2.1 配置被测模型 (`providers/test.yaml`)
 
 ```yaml
 test:
-  - 
-    provider: openai
+  - provider: openai
     api_key: sk-xxx
     base_url: https://api.xxx.com/v1
     model_name: gpt-4o-mini
-  -
-    provider: openai
+    params:                    # 可选：模型参数
+      temperature: 0.7
+      max_tokens: 4096
+  - provider: openai
     api_key: sk-xxx
     base_url: https://api.xxx.com/v1
     model_name: deepseek-v3
-    
+
 retry:
   max_attempts: 3
   delay: 10.0
 ```
 
-将 `providers/judge.yaml.example` 复制为 `providers/judge.yaml`，并填写评判模型的 API 信息：
+#### 2.2 配置评判模型 (`providers/judge.yaml`)
 
 ```yaml
 judge:
   provider: anthropic
   api_key: sk-xxx
   base_url: https://api.xxx.com/v1
-  model_name: claude-4-5-sonnet
+  model_name: claude-sonnet-4-20250514
+  params:
+    temperature: 0.3
+
+retry:
+  max_attempts: 3
+  delay: 10.0
 ```
 
-添加新的 LLM 提供商的流程：
+### 3. 配置题目
 
-1. 在 `src/adaptors/` 下创建新的适配器文件（如 `new_provider.py`）
-2. 继承 `BaseLLMAdaptor` 类并实现必要的方法
-3. 在 `src/adaptors/__init__.py` 中注册新适配器
-4. 在配置文件中使用新提供商
+#### 当前格式（旧）
 
-
-#### 2.2 配置题库信息
-
-1. 在 `data\indicators.yaml` 中配置评分指标信息，格式为：
-
-```yaml
-- category_id: code
-  indicators:
-    ans_correct: "答案正确性 - 代码能否正确运行并得到预期结果"
-    code_quality: "代码质量 - 代码风格、注释、可读性"
-    efficiency: "运行效率 - 算法时间和空间复杂度"
-    robustness: "鲁棒性 - 异常处理和边界情况考虑"
-- category_id: theory
-  indicators:
-    completeness: "回答完整性 - 是否涵盖问题的所有方面"
-    accuracy: "准确性 - 概念和信息是否准确无误"
-    clarity: "表达清晰度 - 逻辑是否清晰、表述是否易懂"
-    depth: "深度 - 回答是否有深度和见解"
-# ...
-```
-
-2. 在 `data\questions.yaml` 中配置题目元数据（不再保存题干与标准答案文本），格式为：
-
-```yaml
-- id: "题目id，使用英文、数字、短横杠、下划线"
-  question_brief: "题目简介"
-  scoring_std:
-    max_score: 10  # 满分
-    indicators:    # 本题使用的评分指标
-      - "correct_max_1"
-      - "code_quality"
-# ...
-```
-
-3. 将题目的原始 Markdown 文件放置于以下路径（以题目 id 为目录名）：
+题目配置在 `data/questions.yaml`，题目内容在 `data/questions/<id>/` 目录：
 
 ```
-data/questions/<id>/question.md   # 题目正文（Markdown）
-data/questions/<id>/answer.md     # 标准答案（Markdown）
+data/
+├── questions.yaml          # 题目元数据
+├── indicators.yaml         # 评分指标定义
+└── questions/
+    └── <question-id>/
+        ├── question.md     # 题目正文
+        └── answer.md       # 标准答案
 ```
 
-程序会在运行时自动读取上述 Markdown，并用于构建提问/评判的 prompt。
+#### 目标格式（新）- 重构中
 
-#### 2.3 配置基础prompt（可选）
+题目直接存放在题库目录，使用标准化文件结构：
 
-在 `prompts/question.md` 中配置提问模板的提示词，在 `prompts/judge.md` 中配置评判模板的提示词。
+```
+数理能力基准测试题库/base-test/001-chicken-rabbit-cage/
+├── README.md       # 人类阅读的完整文档
+├── meta.yaml       # 元数据（id、评分指标等）
+├── prompt.md       # 发给被测模型的 prompt
+└── reference.md    # 标准答案/评判依据
+```
 
-注意：**占位符不要修改**
-
-### 3. 运行评测
+### 4. 运行评测
 
 ```bash
-python ./main.py
+python main.py
 ```
 
-### 查看结果
+### 5. 查看结果
 
-评测完成后，结果保存在 `results/` 目录：
+```
+results/
+├── YYYYMMDD_HHMMSS.yaml    # 汇总结果
+└── raw/
+    ├── test/               # 被测模型原始答案
+    ├── judge/              # 评判详细结果
+    ├── input_test/         # 发送给被测模型的 prompt
+    └── input-judge/        # 发送给评判模型的 prompt
+```
 
-- `results/YYYYMMDD_HHMMSS.yaml` - 汇总结果（YAML）
-- `results/raw/test/` - 模型原始答案
-- `results/raw/judge/` - 评判详细结果（YAML）
+## 评分指标
 
-日志文件保存在 `logs/` 目录。
+定义在 `data/indicators.yaml`：
+
+| 类别 | 指标 | 说明 |
+|------|------|------|
+| **code** | `ans_correct` | 答案正确性 |
+| | `code_quality` | 代码质量 |
+| | `efficiency` | 运行效率 |
+| | `robustness` | 鲁棒性 |
+| **theory** | `completeness` | 回答完整性 |
+| | `accuracy` | 准确性 |
+| | `clarity` | 表达清晰度 |
+| | `depth` | 深度 |
+
+## 添加新的 LLM 提供商
+
+1. 在 `src/adaptors/` 下创建新的适配器文件
+2. 继承 `BaseLLMAdaptor` 类并实现 `chat()` 方法
+3. 在 `src/adaptors/__init__.py` 中注册新适配器
+4. 在配置文件中使用新提供商名称
+
+## 目录结构
+
+```
+code-fish/
+├── main.py                 # 主程序入口
+├── requirements.txt        # Python 依赖
+├── data/
+│   ├── questions.yaml      # 题目元数据
+│   ├── indicators.yaml     # 评分指标定义
+│   ├── question_banks.yaml # 题库路径配置
+│   └── questions/          # 题目内容目录
+├── prompts/
+│   ├── question.md         # 提问模板
+│   └── judge.md            # 评判模板
+├── providers/
+│   ├── test.yaml.example   # 被测模型配置示例
+│   └── judge.yaml.example  # 评判模型配置示例
+├── src/
+│   ├── ask.py              # 提问模块
+│   ├── judge.py            # 评判模块
+│   ├── logger.py           # 日志模块
+│   ├── md2str.py           # Markdown 处理
+│   └── adaptors/           # LLM 适配器
+├── results/                # 评测结果（gitignore）
+└── logs/                   # 运行日志（gitignore）
+```
+
+## 重构计划
+
+- [ ] 实现题目加载器，支持从 `meta.yaml` + `prompt.md` + `reference.md` 读取题目
+- [ ] 支持按题库/难度筛选题目
+- [ ] 自动扫描题库目录，无需手动维护 `questions.yaml`
+- [ ] 将测试结果写回题目目录的 `test-results/`

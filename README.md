@@ -2,6 +2,15 @@
 
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
+> ⚠️ **重构进行中 (Refactoring in Progress)**
+> 
+> 本项目正在进行重大重构，目标是实现完全自动化的评测流程：
+> - 📁 **题目格式标准化**：所有题目迁移到 `meta.yaml` + `prompt.md` + `reference.md` 结构
+> - 🤖 **自动化评测**：使用 [code-fish](./code-fish/) 实现自动化评测
+> - 🔧 **开发工具**：Git hooks 验证 + Claude Code Skill 辅助创建题目
+> 
+> 详见 [code-fish/README.md](./code-fish/README.md) 了解评测系统架构。
+
 ## 📖 项目简介 (Project Overview)
 
 本项目旨在构建一个全面且高难度的 AI 能力评测体系，主要包含：
