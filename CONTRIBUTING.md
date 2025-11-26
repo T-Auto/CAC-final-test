@@ -2,6 +2,20 @@
 
 > **❗在push和提交pr之前务必阅读此文档**
 
+## 快速开始
+
+### 启用 Git Hooks（推荐）
+
+Clone 仓库后，运行以下命令启用提交前验证：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+这会在每次 `git commit` 时自动检查题目格式是否符合规范。
+
+> 💡 如需临时跳过验证：`git commit --no-verify`
+
 ## 文件组织规范
 
 总体逻辑如下：

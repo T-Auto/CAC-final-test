@@ -1,0 +1,28 @@
+#!/bin/bash
+# 题目格式验证 pre-commit hook
+# 在提交前检查题目文件结构是否符合规范
+
+echo "🔍 验证题目格式..."
+
+# 检查是否有题库相关文件被修改
+CHANGED_FILES=$(git diff --cached --name-only)
+
+# 检查是否涉及题库目录
+if echo "$CHANGED_FILES" | grep -qE "^(代码能力基准测试题库|数理能力基准测试题库|自然语言与逻辑能力基准测试题库|综合能力测评)/"; then
+    # 运行验证脚本
+    if [ -f "scripts/validate_questions.py" ]; then
+        python scripts/validate_questions.py
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ 题目格式验证失败，请修复后重新提交"
+            echo "💡 如需跳过验证，使用: git commit --no-verify"
+            exit 1
+        fi
+    else
+        echo "⚠️ 验证脚本不存在: scripts/validate_questions.py"
+    fi
+else
+    echo "✅ 未修改题库文件，跳过验证"
+fi
+
+exit 0
