@@ -1,0 +1,16 @@
+# meta.yaml 模板
+# 复制此文件并根据实际情况修改
+
+id: {category}-{difficulty}-{number}  # 例如: math-base-001, code-adv-002
+brief: 题目简短描述（一句话概括）
+category: math  # 可选: math | code | logic | comprehensive
+difficulty: base  # 可选: base | advanced | final | final+
+scoring_std:
+  max_score: 10
+  indicators:
+    # 根据题目类型选择合适的指标
+    # 代码题: ans_correct, code_quality, efficiency, robustness
+    # 理论题: completeness, accuracy, clarity, depth
+    # 设计题: ans_correct, example_quality, completeness, practicality
+    - accuracy
+    - completeness
