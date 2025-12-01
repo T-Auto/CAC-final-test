@@ -1,0 +1,10 @@
+id: math-adv-005
+brief: 椭圆三角形周长问题
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 解题过程完整性
+    - depth          # 方法深度

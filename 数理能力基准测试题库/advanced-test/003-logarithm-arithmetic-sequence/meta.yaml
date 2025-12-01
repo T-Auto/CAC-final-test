@@ -1,0 +1,10 @@
+id: math-adv-003
+brief: 对数等差数列求参数
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 解题过程完整性
+    - depth          # 方法深度
