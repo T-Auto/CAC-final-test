@@ -1,0 +1,10 @@
+id: math-adv-013
+brief: 三角函数不等式证明
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 20
+  indicators:
+    - correctness    # 证明正确性
+    - completeness   # 证明完整性
+    - depth          # 方法深度
