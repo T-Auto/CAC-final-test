@@ -1,0 +1,51 @@
+#!/bin/bash
+# Commit message格式验证 hook
+# 验证commit message是否符合CONTRIBUTING.md规范
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+echo "🔍 验证commit message格式..."
+
+# 检查是否为空
+if [ -z "$COMMIT_MSG" ]; then
+    echo "❌ Commit message不能为空"
+    exit 1
+fi
+
+# 获取第一行作为主题
+SUBJECT=$(echo "$COMMIT_MSG" | head -n1)
+
+# 检查主题行长度（不超过50个字符）
+if [ ${#SUBJECT} -gt 50 ]; then
+    echo "❌ 主题行过长（超过50个字符）: $SUBJECT"
+    exit 1
+fi
+
+# 检查主题行结尾是否有句号
+if [[ "$SUBJECT" == *"." ]]; then
+    echo "❌ 主题行不应以句号结尾: $SUBJECT"
+    exit 1
+fi
+
+# 检查是否包含emoji
+if ! echo "$SUBJECT" | grep -qE '[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U000024C2-\U0001F251]'; then
+    echo "❌ 主题行应包含emoji: $SUBJECT"
+    exit 1
+fi
+
+# 检查是否包含有效的类型
+VALID_TYPES="init|release|style|feat|fix|docs|refactor|perf|dx|workflow|types|wip|test|build|ci|chore|deps"
+if ! echo "$SUBJECT" | grep -qE "($VALID_TYPES):"; then
+    echo "❌ 主题行应包含有效类型 ($VALID_TYPES): $SUBJECT"
+    exit 1
+fi
+
+# 检查格式：[emoji][类型]: [描述]
+if ! echo "$SUBJECT" | grep -qE '^.+ .+: .+'; then
+    echo "❌ 主题行格式应为 '[emoji][类型]: [描述]': $SUBJECT"
+    exit 1
+fi
+
+echo "✅ Commit message格式验证通过"
+exit 0
