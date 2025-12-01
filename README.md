@@ -2,6 +2,8 @@
 
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
+> 🚨 **重要代码审查报告**：请所有维护者务必阅读 [代码质量检查报告](docs/code-review-report.md)，了解项目当前状态和需要修复的关键问题。
+
 > ⚠️ **重构进行中 (Refactoring in Progress)**
 > 
 > 本项目正在进行重大重构，目标是实现完全自动化的评测流程：
@@ -42,12 +44,12 @@ Benchmark for Evaluating the Performance of Natural Language Models and Agents /
 
 ## 📊 难度分级 (Difficulty Levels)
 
-| 级别 | 描述 | 目标模型 |
-| :--- | :--- | :--- |
-| **Base-test** | 较为简单，生活中常用的问题。 | 3B~30B 本地/边缘计算小模型 |
-| **Advanced-test** | 具有一定难度，8B/30B/70B 模型几乎无法完成。 | 500B+ (DeepSeek, GPT-4, Gemini 等) |
-| **Final-test** | 极高难度，以 Google AI Studio 中 Gemini-1.5-pro 的最大思考上限为基准（需多次尝试）。 | 顶级模型 (SOTA) |
-| **Final-test+** | 当前所有顶级 AI 均无法解决，但人类可以解决的问题。 | 未来模型 (Gemini-Deepthink, GPT-5 等) |
+| 级别              | 描述                                                                                 | 目标模型                              |
+| :---------------- | :----------------------------------------------------------------------------------- | :------------------------------------ |
+| **Base-test**     | 较为简单，生活中常用的问题。                                                         | 3B~30B 本地/边缘计算小模型            |
+| **Advanced-test** | 具有一定难度，8B/30B/70B 模型几乎无法完成。                                          | 500B+ (DeepSeek, GPT-4, Gemini 等)    |
+| **Final-test**    | 极高难度，以 Google AI Studio 中 Gemini-1.5-pro 的最大思考上限为基准（需多次尝试）。 | 顶级模型 (SOTA)                       |
+| **Final-test+**   | 当前所有顶级 AI 均无法解决，但人类可以解决的问题。                                   | 未来模型 (Gemini-Deepthink, GPT-5 等) |
 
 ## 🧪 其他测试 (Other Tests)
 
