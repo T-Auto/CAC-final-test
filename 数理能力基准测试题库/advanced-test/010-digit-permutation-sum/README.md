@@ -1,3 +1,7 @@
+> **题目来源**：2025 CMO预赛（高联一试）第八题
+>
+> ⚠️ 此题目未经过其他模型测试，后续可能调整难度等级为 final test
+
 # Question
 
 将 $1, 2, 3, \dots, 9$ 排列为 $a, b, c, d, e, f, g, h, i$，使得 3 个三位数 $\overline{abc}, \overline{def}, \overline{ghi}$ 之和等于 2025，则不同的排列方法数为 _______.

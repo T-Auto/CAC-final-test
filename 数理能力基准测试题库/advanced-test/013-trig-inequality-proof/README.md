@@ -1,3 +1,7 @@
+> **题目来源**：2025 CMO预赛（高联一试）第十一题
+>
+> ⚠️ 此题目未经过其他模型测试，后续可能调整难度等级为 final test
+
 # Question
 
 设 $\alpha$ 为实数，$m, n$ 为正整数，且 $\sin m\alpha \cdot \sin n\alpha \neq 0$。证明：

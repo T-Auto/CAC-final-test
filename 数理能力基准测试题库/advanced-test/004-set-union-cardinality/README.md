@@ -1,3 +1,7 @@
+> **题目来源**：2025 CMO预赛（高联一试）第二题
+>
+> ⚠️ 此题目未经过其他模型测试，后续可能调整难度等级为 final test
+
 # Question
 
 设集合 $A = \{1, 2, 3, \dots, 100\}$，$B = \left\{ a^2 + 2^a \mid a \in A \right\}$，则 $A \cup B$ 的元素个数为 $\underline{\quad\quad}$。
