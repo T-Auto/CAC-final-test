@@ -4,8 +4,6 @@ We need to count permutations $(a,b,c,d,e,f,g,h,i)$ of digits $1$-$9$ such that 
 
 $$\overline{abc} + \overline{def} + \overline{ghi} = 2025$$
 
----
-
 ## Step 1: Set up equations
 
 Let $X = a+d+g$ (sum of hundreds digits), $Y = b+e+h$ (sum of tens digits), $Z = c+f+i$ (sum of units digits).
@@ -15,8 +13,6 @@ $$100X + 10Y + Z = 2025$$
 
 Since digits $1$-$9$ are used exactly once:
 $$X + Y + Z = 1 + 2 + \cdots + 9 = 45$$
-
----
 
 ## Step 2: Solve the system
 
@@ -37,8 +33,6 @@ From $6 \le Z = 10X - 175 \le 24$: $X \ge 18.1$
 
 Thus $X = 19$, giving $Y = 11$, $Z = 15$.
 
----
-
 ## Step 3: Enumerate valid partitions
 
 **Triples with sum 19 (hundreds digits $H$):**
@@ -49,17 +43,15 @@ $$\{1,2,8\}, \{1,3,7\}, \{1,4,6\}, \{2,3,6\}, \{2,4,5\}$$
 
 Count disjoint pairs $(H, T)$:
 
-| $H$ | Compatible $T$ | Count |
-|-----|----------------|-------|
-| $\{2,8,9\}$ | $\{1,3,7\}, \{1,4,6\}$ | 2 |
-| $\{3,7,9\}$ | $\{1,2,8\}, \{1,4,6\}, \{2,4,5\}$ | 3 |
-| $\{4,6,9\}$ | $\{1,2,8\}, \{1,3,7\}$ | 2 |
-| $\{4,7,8\}$ | $\{2,3,6\}$ | 1 |
-| $\{5,6,8\}$ | $\{1,3,7\}$ | 1 |
+| $H$         | Compatible $T$                    | Count |
+| ----------- | --------------------------------- | ----- |
+| $\{2,8,9\}$ | $\{1,3,7\}, \{1,4,6\}$            | 2     |
+| $\{3,7,9\}$ | $\{1,2,8\}, \{1,4,6\}, \{2,4,5\}$ | 3     |
+| $\{4,6,9\}$ | $\{1,2,8\}, \{1,3,7\}$            | 2     |
+| $\{4,7,8\}$ | $\{2,3,6\}$                       | 1     |
+| $\{5,6,8\}$ | $\{1,3,7\}$                       | 1     |
 
 Total: $2 + 3 + 2 + 1 + 1 = 9$ valid partitions.
-
----
 
 ## Step 4: Count permutations
 
@@ -68,20 +60,6 @@ For each partition, the three digits in each group can be assigned to their resp
 Total permutations:
 $$9 \times (3!)^3 = 9 \times 216 = 1944$$
 
----
-
 ## Answer
 
 $$\boxed{1944}$$
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**
-
-解题过程完整，包含：
-1. 正确建立代数方程组
-2. 正确求解唯一解 $(X, Y, Z) = (19, 11, 15)$
-3. 系统枚举所有满足条件的集合划分
-4. 正确计算排列数，最终答案 $1944$ 正确

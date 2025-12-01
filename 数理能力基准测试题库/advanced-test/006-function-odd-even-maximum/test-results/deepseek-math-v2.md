@@ -2,8 +2,6 @@
 
 We need to find the maximum value of $f(x)$ given that $f$ is defined on $\mathbb{R}$, and $g(x) = (x-1)f(x)$ is odd, $h(x) = f(x) + x$ is even.
 
----
-
 ## Step 1: Use the even function condition
 
 Given $h(x) = f(x) + x$ is even, we have $h(-x) = h(x)$:
@@ -13,8 +11,6 @@ $$f(-x) + (-x) = f(x) + x$$
 $$f(-x) - x = f(x) + x$$
 
 $$f(-x) = f(x) + 2x \quad \text{...(2)}$$
-
----
 
 ## Step 2: Use the odd function condition
 
@@ -31,8 +27,6 @@ $$-(x+1)f(-x) = -(x-1)f(x)$$
 Multiply both sides by $-1$:
 
 $$(x+1)f(-x) = (x-1)f(x) \quad \text{...(1')}$$
-
----
 
 ## Step 3: Solve for f(x)
 
@@ -60,8 +54,6 @@ $$f(x) + x(x+1) = 0$$
 
 $$f(x) = -x(x+1) = -x^2 - x$$
 
----
-
 ## Step 4: Verify the solution
 
 **Check $h(x) = f(x) + x$ is even:**
@@ -84,8 +76,6 @@ And $-g(x) = -(-x(x-1)(x+1)) = x(x-1)(x+1)$
 
 So $g(-x) = -g(x)$. ✓
 
----
-
 ## Step 5: Find the maximum value
 
 $f(x) = -x^2 - x$ is a quadratic with leading coefficient $-1$ (negative), so it opens downward and has a maximum at its vertex.
@@ -100,20 +90,6 @@ Maximum value:
 
 $$f\left(-\dfrac{1}{2}\right) = -\left(-\dfrac{1}{2}\right)^2 - \left(-\dfrac{1}{2}\right) = -\dfrac{1}{4} + \dfrac{1}{2} = \dfrac{1}{4}$$
 
----
-
 ## Answer
 
 $$\boxed{\dfrac{1}{4}}$$
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**
-
-解题过程完整，包含：
-1. 正确应用奇偶函数定义建立函数方程
-2. 联立方程求解得到 $f(x) = -x^2 - x$
-3. 验证所求函数满足原条件
-4. 正确求解二次函数最大值，最终答案 $\dfrac{1}{4}$ 正确

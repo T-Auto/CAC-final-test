@@ -1,6 +1,10 @@
 # glm-4.6 测试结果
 
-https://chat.z.ai/s/9ffe73e2-95ad-4a5b-8c45-0a52cdd5b69d
+link(if exists): https://chat.z.ai/s/9ffe73e2-95ad-4a5b-8c45-0a52cdd5b69d
+
+
+
+---------
 
 
 好的，这是一道非常经典的逻辑推理题。我们来一步步拆解分析。

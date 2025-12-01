@@ -55,9 +55,3 @@ But we should double-check the arithmetic: 10 + 2√14 - 2d1 = 8 => 2d1 = 10 + 2
 Now we need to present answer as a simplified expression: 1 + √14.
 
 Thus the length of F1Q is $\boxed{1+\sqrt{14}}$.
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**

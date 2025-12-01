@@ -9,8 +9,6 @@
 - $A=\{(x,0)\mid x\le 0\}$（负半轴及原点）
 - $B=\{(x,y)\mid y^{2}=4x,\;x\ge 0\}$（抛物线）
 
----
-
 ## 分类讨论
 
 设 $P(x_{1},y_{1}),Q(x_{2},y_{2})\in\Gamma$，$M$ 为 $PQ$ 的中点，且 $\overrightarrow{OP}\cdot\overrightarrow{OQ}=-2$。
@@ -63,28 +61,12 @@ $$P=(-1,0),\qquad Q=\bigl(2,\pm2\sqrt{2}\bigr)$$
 
 $$M=\Bigl(\frac{-1+2}{2},\frac{0\pm2\sqrt{2}}{2}\Bigr)=\Bigl(\frac{1}{2},\pm\sqrt{2}\Bigr)$$
 
----
-
 ## 验证
 
 - $M$ 满足 $\Gamma$：$(\sqrt{2})^{2}=2$，$2\cdot\frac{1}{2}+2\cdot\frac{1}{2}=2$ ✓
 - $P,Q,M$ 互异 ✓
 - $\overrightarrow{OP}\cdot\overrightarrow{OQ}=(-1)\times2+0\times(\pm2\sqrt{2})=-2$ ✓
 
----
-
 ## Answer
 
 $$\boxed{M = \left(\frac{1}{2}, \sqrt{2}\right) \text{ 或 } M = \left(\frac{1}{2}, -\sqrt{2}\right)}$$
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**
-
-解题过程完整，包含：
-1. 正确化简点集 $\Gamma$ 为负半轴与抛物线的并集
-2. 完整的分类讨论（三种情况）
-3. 正确求解方程组得到 $M$ 的坐标
-4. 验证过程完整

@@ -8,8 +8,6 @@ Since A is a set of integers 1..100, and B likely contains numbers that are larg
 
 So we need to compute $|B|$ (the number of distinct values among $f(a)$ for $a=1..100$) and the intersection size (how many of those values are $\leq 100$ and also in A).
 
----
-
 ## Analysis of f(a) = a² + 2^a
 
 We can approach by analyzing $f(a) = a^2 + 2^a$. For $a \geq 1$, $2^a$ grows quickly. Let's compute small a values to see which $f(a)$ are $\leq 100$.
@@ -33,8 +31,6 @@ So $A \cap B$ includes $\{3,8,17,32,57,100\}$.
 
 Only $a=1..6$ produce $f(a) \leq 100$. So the intersection consists of those six values.
 
----
-
 ## Computing |B|
 
 Now we need to compute $|B|$, the number of distinct values among $f(a)$ for $a=1..100$. Since $f$ is strictly increasing for $a \geq 1$:
@@ -45,8 +41,6 @@ Since $2^a$ is positive and grows, the difference is positive for all $a \geq 1$
 
 Therefore all $f(a)$ are distinct. So $|B| = 100$ (since a runs over 100 distinct values, and f is injective).
 
----
-
 ## Final Calculation
 
 Thus:
@@ -56,20 +50,6 @@ Thus:
 
 $$|A \cup B| = |A| + |B| - |A \cap B| = 100 + 100 - 6 = 194$$
 
----
-
 ## Answer
 
 $$\boxed{194}$$
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**
-
-解题过程完整，包含：
-1. 正确分析了函数 $f(a) = a^2 + 2^a$ 的单调性
-2. 准确计算了所有 $f(a) \leq 100$ 的情况
-3. 正确应用容斥原理计算并集元素个数
-4. 最终答案 194 正确

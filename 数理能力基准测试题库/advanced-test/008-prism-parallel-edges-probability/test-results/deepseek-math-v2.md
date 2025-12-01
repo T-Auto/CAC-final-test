@@ -4,8 +4,6 @@ We need to consider any quadrilateral prism $\Gamma$. A quadrilateral prism has 
 
 The probability $P(\Gamma)$ is the number of unordered pairs of parallel edges divided by $\binom{12}{2} = 66$.
 
----
-
 ## Parallel Structure Analysis
 
 In any (non-degenerate) quadrilateral prism:
@@ -18,8 +16,6 @@ In any (non-degenerate) quadrilateral prism:
 
 Let the bottom base edges be $e_1, e_2, e_3, e_4$ and their translates $f_1, f_2, f_3, f_4$. The lateral edges form class $L$ of size 4.
 
----
-
 ## Case 1: General Quadrilateral (no opposite sides parallel)
 
 We have four disjoint parallel classes $\{e_i, f_i\}$ each of size 2.
@@ -31,8 +27,6 @@ Parallel pairs:
 Total: $10$
 
 $$P = \frac{10}{66} = \frac{5}{33}$$
-
----
 
 ## Case 2: Trapezoid (exactly one pair of opposite sides parallel)
 
@@ -47,8 +41,6 @@ Parallel pairs:
 
 $$P = \frac{14}{66} = \frac{7}{33}$$
 
----
-
 ## Case 3: Parallelogram (both pairs of opposite sides parallel)
 
 Now $\{e_1, f_1, e_3, f_3\}$ and $\{e_2, f_2, e_4, f_4\}$ are each of size 4.
@@ -60,28 +52,12 @@ Parallel pairs:
 
 $$P = \frac{18}{66} = \frac{3}{11}$$
 
----
-
 ## Conclusion
 
 No other parallelisms can occur in a proper prism (lateral edges cannot be parallel to base edges since the translation vector is not in the base plane).
 
 These three values are the only possibilities.
 
----
-
 ## Answer
 
 $$\boxed{\frac{5}{33},\ \frac{7}{33},\ \frac{3}{11}}$$
-
----
-
-## 验证状态
-
-✅ **答案验证结果：正确**
-
-解题过程完整，包含：
-1. 正确分析四棱柱的平行关系结构
-2. 根据底面四边形形状进行完整分类讨论
-3. 等价类计数方法正确
-4. 最终答案 $\dfrac{5}{33},\ \dfrac{7}{33},\ \dfrac{3}{11}$ 正确
