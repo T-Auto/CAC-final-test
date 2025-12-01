@@ -1,0 +1,8 @@
+id: logic-base-006
+brief: 中文数字比较
+category: logic
+difficulty: base
+scoring_std:
+  max_score: 1
+  indicators:
+    - correct_max_1
