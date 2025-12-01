@@ -1,0 +1,10 @@
+id: math-adv-007
+brief: 复数幂次实数条件
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 答案正确性
+    - completeness   # 解题过程完整性
+    - depth          # 方法深度
