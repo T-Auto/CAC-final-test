@@ -1,0 +1,10 @@
+id: math-final-005
+brief: 数独问题
+category: math
+difficulty: final
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - format_and_constraints
+    - logic 

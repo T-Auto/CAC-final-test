@@ -10,13 +10,16 @@
      accuracy: "准确性 - 概念和信息是否准确无误"
      clarity: "表达清晰度 - 逻辑是否清晰、表述是否易懂"
      depth: "深度 - 回答是否有深度和见解"
+     logic: "逻辑严密性 - 输出的内容是否符合逻辑"
  - category_id: design
    indicators:
      ans_correct: "答案正确性 - 设计方案是否正确"
      example_quality: "示例质量 - 举例是否恰当、清晰"
-     completeness: "回答完整性 - 是否考虑了各种场景"
      practicality: "实用性 - 方案是否具有实际应用价值"
  - category_id: easy
    indicators:
      correct_max_1: "答案是否正确，满分1分"
+ - category_id: rule
+   indicators:
+     format_and_constraints: "格式与约束遵守 - 是否严格遵守了题目中的格式与约束要求"
 
