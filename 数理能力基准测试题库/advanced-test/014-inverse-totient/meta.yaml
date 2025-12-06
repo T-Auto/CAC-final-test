@@ -1,0 +1,10 @@
+id: math-advanced-014
+brief: 逆欧拉函数算法问题
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - completeness
+    - depth
