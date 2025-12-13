@@ -1,5 +1,5 @@
 id: hallucination-001
-brief: Token计算幻觉测试
+brief: Token计算指令遵循测试
 category: hallucination
 scoring_std:
   max_score: 10

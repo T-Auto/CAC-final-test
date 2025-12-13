@@ -54,7 +54,7 @@ Benchmark for Evaluating the Performance of Natural Language Models and Agents /
 ## 🧪 其他测试 (Other Tests)
 
 ### LLM 日用体验测试
-- **幻觉与谄媚**：测评模型是否存在幻觉或过度讨好用户的情况。
+- **幻觉控制与指令遵循**：测评模型是否存在幻觉、是否能明确表达不确定性，以及是否能遵循约束指令（目录：`幻觉控制与指令遵循测试/`）。
 
 ### Agent 相关测试
 - 由于此部分暂时无法自动化，当前阶段我们将优先专注于 LLM 基准能力的测试编写。

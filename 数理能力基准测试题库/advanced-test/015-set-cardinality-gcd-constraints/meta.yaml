@@ -1,0 +1,10 @@
+id: math-adv-015
+brief: gcd 条件下集合最大基数
+category: math
+difficulty: advanced
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy
+    - completeness
+    - depth
