@@ -18,6 +18,8 @@ cp config.yaml.example config.yaml
 python cli.py --scope math              # 测试整个数理题库
 python cli.py --scope math/base-test    # 测试数理基础题
 python cli.py --scope math/advanced --range 001-005  # 指定范围
+python cli.py --scope logic -j 8        # 并发测试（默认 1）
+python cli.py --scope logic -j 8 --json > report.json  # 机器可读汇总
 python cli.py --scope logic --dry-run   # 预览将测试的题目
 ```
 
@@ -55,13 +57,15 @@ retry:
 python cli.py [options]
 
 必选:
-  --scope, -s     测试范围: math, code, logic, comp 或 math/base-test
+  --scope, -s     测试范围: math, code, logic, comp, hallucination 或 math/base-test
 
 可选:
   --config, -c    配置文件路径 (默认: config.yaml)
   --range, -r     题号范围: 001-005 或 003
   --force, -f     强制重测 (忽略已有结果)
   --dry-run       仅显示将测试的题目
+  --concurrency, -j  并发数 (默认: 1)
+  --json          输出 JSON 汇总到 stdout（日志输出到 stderr）
 ```
 
 ## 输出位置

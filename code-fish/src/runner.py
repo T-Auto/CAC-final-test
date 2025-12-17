@@ -1,11 +1,38 @@
 """测试执行器"""
+from __future__ import annotations
+
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Callable, List, Optional
 
 from .config import RetryConfig
 from .providers import BaseProvider
 from .scope import Question
+
+
+@dataclass(frozen=True)
+class TestItemResult:
+    index: int
+    question_id: str
+    question_path: Path
+    status: str
+    output_file: Optional[Path] = None
+    elapsed_s: Optional[float] = None
+    attempts: Optional[int] = None
+    error: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class TestRunSummary:
+    model_name: str
+    total: int
+    done: int
+    skipped: int
+    failed: int
+    items: List[TestItemResult]
 
 
 class TestRunner:
@@ -22,66 +49,126 @@ class TestRunner:
         self.incremental = incremental
         self.model_name = provider.get_model_name()
 
-    def run(self, questions: List[Question]) -> dict:
-        """
-        执行测试
+    def run(
+        self,
+        questions: List[Question],
+        concurrency: int = 1,
+        log_fn: Optional[Callable[[str], None]] = None,
+    ) -> TestRunSummary:
+        if concurrency < 1:
+            raise ValueError("concurrency 必须 >= 1")
 
-        Args:
-            questions: 题目列表
-
-        Returns:
-            {question_id: response} 字典
-        """
-        results = {}
         total = len(questions)
-        skipped = 0
-        failed = 0
+        items_by_index: dict[int, TestItemResult] = {}
+        to_run: list[tuple[int, Question, Path]] = []
+
+        log_lock = threading.Lock()
+
+        def log(message: str):
+            if log_fn is None:
+                return
+            with log_lock:
+                log_fn(message)
 
         for i, question in enumerate(questions, 1):
             output_file = question.path / "test-results" / f"{self.model_name}.md"
 
-            # 增量检测
             if self.incremental and output_file.exists():
-                print(f"[{i}/{total}] SKIP {question.id} (已有结果)")
-                skipped += 1
+                items_by_index[i] = TestItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    status="skipped",
+                    output_file=output_file,
+                )
+                log(f"[{i}/{total}] SKIP {question.id} (已有结果)")
                 continue
 
-            # 加载 prompt
-            prompt_file = question.path / "prompt.md"
-            prompt = prompt_file.read_text(encoding="utf-8")
+            to_run.append((i, question, output_file))
 
-            # 执行请求
-            print(f"[{i}/{total}] TEST {question.id}")
+        def run_one(i: int, question: Question, output_file: Path) -> TestItemResult:
+            started = time.monotonic()
+            log(f"[{i}/{total}] TEST {question.id}")
+
+            attempts: Optional[int] = None
             try:
-                response = self._request_with_retry(prompt, question.id)
-                results[question.id] = response
-
-                # 立即写入结果
+                prompt = (question.path / "prompt.md").read_text(encoding="utf-8")
+                response, attempts = self._request_with_retry(
+                    prompt,
+                    context=f"[{i}/{total}] {question.id}",
+                    log=log,
+                )
                 self._write_result(question.path, response)
-                print(f"[{i}/{total}] DONE {question.id}")
+                elapsed = time.monotonic() - started
+                log(f"[{i}/{total}] DONE {question.id} ({elapsed:.2f}s)")
+                return TestItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    status="done",
+                    output_file=output_file,
+                    elapsed_s=elapsed,
+                    attempts=attempts,
+                )
             except Exception as e:
-                print(f"[{i}/{total}] FAIL {question.id}: {e}")
-                failed += 1
+                elapsed = time.monotonic() - started
+                error = f"{type(e).__name__}: {e}"
+                log(f"[{i}/{total}] FAIL {question.id}: {error}")
+                return TestItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    status="failed",
+                    output_file=output_file,
+                    elapsed_s=elapsed,
+                    attempts=attempts,
+                    error=error,
+                )
 
-        # 统计
-        tested = total - skipped - failed
-        print(f"\n完成: {tested} | 跳过: {skipped} | 失败: {failed} | 总计: {total}")
+        if concurrency == 1:
+            for i, question, output_file in to_run:
+                items_by_index[i] = run_one(i, question, output_file)
+        else:
+            with ThreadPoolExecutor(max_workers=concurrency) as executor:
+                futures = [
+                    executor.submit(run_one, i, question, output_file)
+                    for i, question, output_file in to_run
+                ]
+                for future in as_completed(futures):
+                    result = future.result()
+                    items_by_index[result.index] = result
 
-        return results
+        items = [items_by_index[i] for i in sorted(items_by_index)]
+        done = sum(1 for item in items if item.status == "done")
+        skipped = sum(1 for item in items if item.status == "skipped")
+        failed = sum(1 for item in items if item.status == "failed")
 
-    def _request_with_retry(self, prompt: str, question_id: str) -> str:
-        """带重试的请求"""
+        return TestRunSummary(
+            model_name=self.model_name,
+            total=total,
+            done=done,
+            skipped=skipped,
+            failed=failed,
+            items=items,
+        )
+
+    def _request_with_retry(
+        self,
+        prompt: str,
+        context: str,
+        log: Callable[[str], None],
+    ) -> tuple[str, int]:
         max_attempts = self.retry_config.max_attempts
         delay = self.retry_config.delay
         last_error = None
 
         for attempt in range(1, max_attempts + 1):
             try:
-                return self.provider.chat(prompt)
+                return self.provider.chat(prompt), attempt
             except Exception as e:
                 last_error = e
                 if attempt < max_attempts:
-                    print(f"  重试 {attempt}/{max_attempts}: {e}")
+                    log(f"{context} RETRY {attempt}/{max_attempts}: {type(e).__name__}: {e}")
                     time.sleep(delay)
 
         raise RuntimeError(f"请求失败 ({max_attempts} 次尝试): {last_error}")
