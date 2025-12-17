@@ -5,6 +5,8 @@ Examples:
     python cli.py --scope math/base-test --range 001-005
     python cli.py --scope hallucination
     python cli.py --config config.yaml --scope code
+    python cli.py --mode judge --scope math --target mimo-v2-flash -j 4
+    python cli.py --mode all --scope math -j 4
     python cli.py --scope logic -j 8
     python cli.py --scope logic -j 8 --json > report.json
     python cli.py --scope math --force
@@ -20,6 +22,7 @@ import json
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 # 添加 src 到路径
 sys.path.insert(0, str(Path(__file__).parent))
@@ -27,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.config import load_config
 from src.scope import ScopeResolver
 from src.runner import TestRunner
+from src.judge import JudgeRunner
 from src.providers import create_provider
 
 
@@ -50,10 +54,24 @@ def main(argv=None) -> int:
     )
 
     parser.add_argument(
+        "--mode",
+        "-m",
+        choices=["test", "judge", "all"],
+        default="test",
+        help="运行模式: test(默认), judge, all",
+    )
+
+    parser.add_argument(
         "--scope",
         "-s",
         required=True,
         help="测试范围: math, code, logic, comp, hallucination 或 math/base-test",
+    )
+
+    parser.add_argument(
+        "--target",
+        "-t",
+        help="judge 模式: 被评分的模型名 (默认=test-model.name)",
     )
 
     parser.add_argument(
@@ -129,7 +147,9 @@ def main(argv=None) -> int:
         log(f"错误: {error}")
         return 1
 
-    log(f"模型: {config.model.name} ({config.model.provider})")
+    log(f"test-model: {config.test_model.name} ({config.test_model.provider})")
+    if config.judge_model is not None:
+        log(f"judge-model: {config.judge_model.name} ({config.judge_model.provider})")
 
     # 2. 解析 scope
     resolver = ScopeResolver(config.question_banks)
@@ -180,23 +200,6 @@ def main(argv=None) -> int:
             log(f"  - {q.path.relative_to(resolver.base_dir.parent)}")
         return 0
 
-    # 4. 创建 provider
-    provider = create_provider(config.model)
-
-    # 5. 执行测试
-    runner = TestRunner(
-        provider=provider,
-        retry_config=config.retry,
-        incremental=not args.force,
-    )
-
-    log(f"\n开始测试... (并发: {args.concurrency})")
-    summary = runner.run(questions, concurrency=args.concurrency, log_fn=log)
-
-    log(
-        f"\n完成: {summary.done} | 跳过: {summary.skipped} | 失败: {summary.failed} | 总计: {summary.total}"
-    )
-
     repo_root = resolver.base_dir.parent
 
     def rel(path: Optional[Path]) -> Optional[str]:
@@ -207,44 +210,128 @@ def main(argv=None) -> int:
         except ValueError:
             return str(path)
 
-    if args.json:
-        print(
-            json.dumps(
-                {
-                    "ok": summary.failed == 0,
-                    "model": {
-                        "name": config.model.name,
-                        "provider": config.model.provider,
-                        "base_url": config.model.base_url,
-                        "model_id": config.model.model_id,
-                    },
-                    "scope": args.scope,
-                    "range": args.range,
-                    "concurrency": args.concurrency,
-                    "incremental": not args.force,
-                    "total": summary.total,
-                    "done": summary.done,
-                    "skipped": summary.skipped,
-                    "failed": summary.failed,
-                    "items": [
-                        {
-                            "index": item.index,
-                            "id": item.question_id,
-                            "path": rel(item.question_path),
-                            "status": item.status,
-                            "output_file": rel(item.output_file),
-                            "elapsed_s": item.elapsed_s,
-                            "attempts": item.attempts,
-                            "error": item.error,
-                        }
-                        for item in summary.items
-                    ],
-                },
-                ensure_ascii=False,
-            )
-        )
+    # 4. 模式分发
+    if args.mode in ("judge", "all") and config.judge_model is None:
+        error = "judge/all 模式需要配置 judge-model"
+        if args.json:
+            print(json.dumps({"ok": False, "error": error}, ensure_ascii=False))
+            return 1
+        log(f"错误: {error}")
+        return 1
 
-    return 0 if summary.failed == 0 else 1
+    target_model = args.target or config.test_model.name
+    test_summary = None
+    judge_summary = None
+
+    # 5. 执行 test 模式
+    if args.mode in ("test", "all"):
+        provider = create_provider(config.test_model)
+        runner = TestRunner(
+            provider=provider,
+            retry_config=config.retry,
+            incremental=not args.force,
+        )
+        log(f"\n开始测试... (并发: {args.concurrency})")
+        test_summary = runner.run(questions, concurrency=args.concurrency, log_fn=log)
+        log(f"\n测试完成: {test_summary.done} | 跳过: {test_summary.skipped} | 失败: {test_summary.failed} | 总计: {test_summary.total}")
+
+    # 6. 执行 judge 模式
+    if args.mode in ("judge", "all"):
+        judge_provider = create_provider(config.judge_model)
+        judge_runner = JudgeRunner(
+            provider=judge_provider,
+            retry_config=config.retry,
+            incremental=not args.force,
+        )
+        log(f"\n开始评分... (目标: {target_model}, 并发: {args.concurrency})")
+        judge_summary = judge_runner.judge(questions, target_model=target_model, concurrency=args.concurrency, log_fn=log)
+        avg_str = f"{judge_summary.avg_score:.2f}" if judge_summary.avg_score is not None else "N/A"
+        log(f"\n评分完成: {judge_summary.done} | 跳过: {judge_summary.skipped} | 失败: {judge_summary.failed} | 无答案: {judge_summary.no_answer} | 平均分: {avg_str}")
+
+    # 7. JSON 输出
+    if args.json:
+        result = {
+            "ok": True,
+            "mode": args.mode,
+            "scope": args.scope,
+            "range": args.range,
+            "concurrency": args.concurrency,
+            "incremental": not args.force,
+            "test_model": {
+                "name": config.test_model.name,
+                "provider": config.test_model.provider,
+                "base_url": config.test_model.base_url,
+                "model_id": config.test_model.model_id,
+            },
+        }
+        if config.judge_model is not None:
+            result["judge_model"] = {
+                "name": config.judge_model.name,
+                "provider": config.judge_model.provider,
+                "base_url": config.judge_model.base_url,
+                "model_id": config.judge_model.model_id,
+            }
+
+        if test_summary:
+            result["ok"] = result["ok"] and test_summary.failed == 0
+            result["test"] = {
+                "model": config.test_model.name,
+                "total": test_summary.total,
+                "done": test_summary.done,
+                "skipped": test_summary.skipped,
+                "failed": test_summary.failed,
+                "items": [
+                    {
+                        "index": item.index,
+                        "id": item.question_id,
+                        "path": rel(item.question_path),
+                        "status": item.status,
+                        "output_file": rel(item.output_file),
+                        "elapsed_s": item.elapsed_s,
+                        "attempts": item.attempts,
+                        "error": item.error,
+                    }
+                    for item in test_summary.items
+                ],
+            }
+
+        if judge_summary:
+            result["ok"] = result["ok"] and judge_summary.failed == 0
+            result["judge"] = {
+                "judge_model": judge_summary.judge_name,
+                "target_model": judge_summary.target_model,
+                "total": judge_summary.total,
+                "done": judge_summary.done,
+                "skipped": judge_summary.skipped,
+                "failed": judge_summary.failed,
+                "no_answer": judge_summary.no_answer,
+                "avg_score": judge_summary.avg_score,
+                "items": [
+                    {
+                        "index": item.index,
+                        "id": item.question_id,
+                        "path": rel(item.question_path),
+                        "status": item.status,
+                        "score": item.total_score,
+                        "max_score": item.max_score,
+                        "output_file": rel(item.output_file),
+                        "elapsed_s": item.elapsed_s,
+                        "attempts": item.attempts,
+                        "error": item.error,
+                    }
+                    for item in judge_summary.items
+                ],
+            }
+
+        print(json.dumps(result, ensure_ascii=False))
+
+    # 8. 返回码
+    failed = 0
+    if test_summary:
+        failed += test_summary.failed
+    if judge_summary:
+        failed += judge_summary.failed
+    return 0 if failed == 0 else 1
 
 
 if __name__ == "__main__":

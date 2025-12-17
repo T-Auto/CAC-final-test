@@ -1,0 +1,366 @@
+"""评分执行器"""
+from __future__ import annotations
+
+import json
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Callable, List, Optional
+
+import yaml
+
+from .config import RetryConfig
+from .providers import BaseProvider
+from .scope import Question
+
+
+@dataclass(frozen=True)
+class JudgeItemResult:
+    index: int
+    question_id: str
+    question_path: Path
+    target_model: str
+    status: str  # "done" | "skipped" | "failed" | "no_answer"
+    total_score: Optional[float] = None
+    max_score: Optional[float] = None
+    dimensions: Optional[dict] = None
+    feedback: Optional[str] = None
+    output_file: Optional[Path] = None
+    elapsed_s: Optional[float] = None
+    attempts: Optional[int] = None
+    error: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class JudgeSummary:
+    judge_name: str
+    target_model: str
+    total: int
+    done: int
+    skipped: int
+    failed: int
+    no_answer: int
+    avg_score: Optional[float]
+    items: List[JudgeItemResult]
+
+
+JUDGE_PROMPT_TEMPLATE = """你是专业评审员。请根据以下信息评分：
+
+## 原题目
+{prompt}
+
+## 参考答案/评分标准
+{reference}
+
+## 被测模型的回答
+{answer}
+
+## 评分维度（满分 {max_score} 分）
+{indicators_list}
+
+请严格按照以下 JSON 格式输出（不要输出其他内容）：
+```json
+{{
+  "total_score": <总分>,
+  "dimensions": {{
+    "<维度名>": {{"score": <得分>, "comment": "<简短评价>"}},
+    ...
+  }},
+  "feedback": "<总体评价>"
+}}
+```"""
+
+
+class JudgeRunner:
+    """执行评分"""
+
+    def __init__(
+        self,
+        provider: BaseProvider,
+        retry_config: RetryConfig,
+        incremental: bool = True,
+    ):
+        self.provider = provider
+        self.retry_config = retry_config
+        self.incremental = incremental
+        self.judge_name = provider.get_model_name()
+
+    def judge(
+        self,
+        questions: List[Question],
+        target_model: str,
+        concurrency: int = 1,
+        log_fn: Optional[Callable[[str], None]] = None,
+    ) -> JudgeSummary:
+        if concurrency < 1:
+            raise ValueError("concurrency 必须 >= 1")
+
+        total = len(questions)
+        items_by_index: dict[int, JudgeItemResult] = {}
+        to_judge: list[tuple[int, Question, Path, Path]] = []
+
+        log_lock = threading.Lock()
+
+        def log(message: str):
+            if log_fn is None:
+                return
+            with log_lock:
+                log_fn(message)
+
+        for i, question in enumerate(questions, 1):
+            answer_file = question.path / "test-results" / f"{target_model}.md"
+            output_file = question.path / "test-results" / f"{target_model}.judge.yaml"
+
+            # 检查是否有测试结果
+            if not answer_file.exists():
+                items_by_index[i] = JudgeItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    target_model=target_model,
+                    status="no_answer",
+                )
+                log(f"[{i}/{total}] NO_ANSWER {question.id} (无测试结果)")
+                continue
+
+            # 增量模式：跳过已评分的
+            if self.incremental and output_file.exists():
+                items_by_index[i] = JudgeItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    target_model=target_model,
+                    status="skipped",
+                    output_file=output_file,
+                )
+                log(f"[{i}/{total}] SKIP {question.id} (已有评分)")
+                continue
+
+            to_judge.append((i, question, answer_file, output_file))
+
+        def judge_one(i: int, question: Question, answer_file: Path, output_file: Path) -> JudgeItemResult:
+            started = time.monotonic()
+            log(f"[{i}/{total}] JUDGE {question.id}")
+
+            attempts: Optional[int] = None
+            try:
+                # 读取题目、参考答案、被测回答
+                prompt = (question.path / "prompt.md").read_text(encoding="utf-8")
+                reference = (question.path / "reference.md").read_text(encoding="utf-8")
+                answer = answer_file.read_text(encoding="utf-8")
+
+                # 读取 meta.yaml 获取评分维度
+                meta = self._load_meta(question.path)
+                scoring_std = meta.get("scoring_std", {})
+                indicators = scoring_std.get("indicators", ["accuracy"])
+                max_score = scoring_std.get("max_score", 10)
+                if not isinstance(indicators, list):
+                    raise ValueError(f"meta.yaml scoring_std.indicators 必须是列表: {type(indicators).__name__}")
+
+                # 构造评分 prompt
+                judge_prompt = self._build_judge_prompt(prompt, reference, answer, indicators, max_score)
+
+                # 调用评分模型
+                response, attempts = self._request_with_retry(
+                    judge_prompt,
+                    context=f"[{i}/{total}] {question.id}",
+                    log=log,
+                )
+
+                # 解析评分结果
+                result = self._parse_judge_response(response)
+                total_score_raw = result.get("total_score")
+                if total_score_raw is None:
+                    raise ValueError("评分输出缺少 total_score")
+                try:
+                    total_score = float(total_score_raw)
+                except (TypeError, ValueError) as e:
+                    raise ValueError(f"评分输出 total_score 非数字: {total_score_raw!r}") from e
+
+                try:
+                    max_score_num = float(max_score)
+                except (TypeError, ValueError) as e:
+                    raise ValueError(f"meta.yaml scoring_std.max_score 非数字: {max_score!r}") from e
+
+                if total_score < 0 or total_score > max_score_num + 1e-6:
+                    raise ValueError(f"评分输出 total_score 越界: {total_score}/{max_score_num}")
+
+                dimensions = result.get("dimensions", {})
+                if dimensions is None:
+                    dimensions = {}
+                if not isinstance(dimensions, dict):
+                    raise ValueError(f"评分输出 dimensions 必须是对象: {type(dimensions).__name__}")
+
+                feedback = result.get("feedback", "")
+                if feedback is None:
+                    feedback = ""
+                if not isinstance(feedback, str):
+                    feedback = str(feedback)
+
+                # 写入结果
+                self._write_result(
+                    output_file=output_file,
+                    question_id=question.id,
+                    target_model=target_model,
+                    total_score=total_score,
+                    max_score=max_score_num,
+                    indicators=indicators,
+                    dimensions=dimensions,
+                    feedback=feedback,
+                )
+
+                elapsed = time.monotonic() - started
+                log(f"[{i}/{total}] DONE {question.id} ({total_score}/{max_score_num}, {elapsed:.2f}s)")
+
+                return JudgeItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    target_model=target_model,
+                    status="done",
+                    total_score=total_score,
+                    max_score=max_score_num,
+                    dimensions=dimensions,
+                    feedback=feedback,
+                    output_file=output_file,
+                    elapsed_s=elapsed,
+                    attempts=attempts,
+                )
+            except Exception as e:
+                elapsed = time.monotonic() - started
+                error = f"{type(e).__name__}: {e}"
+                log(f"[{i}/{total}] FAIL {question.id}: {error}")
+                return JudgeItemResult(
+                    index=i,
+                    question_id=question.id,
+                    question_path=question.path,
+                    target_model=target_model,
+                    status="failed",
+                    elapsed_s=elapsed,
+                    attempts=attempts,
+                    error=error,
+                )
+
+        # 执行评分
+        if concurrency == 1:
+            for i, question, answer_file, output_file in to_judge:
+                items_by_index[i] = judge_one(i, question, answer_file, output_file)
+        else:
+            with ThreadPoolExecutor(max_workers=concurrency) as executor:
+                futures = [
+                    executor.submit(judge_one, i, question, answer_file, output_file)
+                    for i, question, answer_file, output_file in to_judge
+                ]
+                for future in as_completed(futures):
+                    result = future.result()
+                    items_by_index[result.index] = result
+
+        # 汇总
+        items = [items_by_index[i] for i in sorted(items_by_index)]
+        done = sum(1 for item in items if item.status == "done")
+        skipped = sum(1 for item in items if item.status == "skipped")
+        failed = sum(1 for item in items if item.status == "failed")
+        no_answer = sum(1 for item in items if item.status == "no_answer")
+
+        # 计算平均分
+        scored_items = [item for item in items if item.status == "done" and item.total_score is not None]
+        avg_score = None
+        if scored_items:
+            avg_score = sum(item.total_score for item in scored_items) / len(scored_items)
+
+        return JudgeSummary(
+            judge_name=self.judge_name,
+            target_model=target_model,
+            total=total,
+            done=done,
+            skipped=skipped,
+            failed=failed,
+            no_answer=no_answer,
+            avg_score=avg_score,
+            items=items,
+        )
+
+    def _load_meta(self, question_path: Path) -> dict:
+        meta_file = question_path / "meta.yaml"
+        if not meta_file.exists():
+            return {}
+        with open(meta_file, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+
+    def _build_judge_prompt(self, prompt: str, reference: str, answer: str, indicators: list, max_score: int) -> str:
+        indicators_list = "\n".join(f"- {ind}" for ind in indicators)
+        return JUDGE_PROMPT_TEMPLATE.format(
+            prompt=prompt,
+            reference=reference,
+            answer=answer,
+            max_score=max_score,
+            indicators_list=indicators_list,
+        )
+
+    def _parse_judge_response(self, response: str) -> dict:
+        """解析评分模型的 JSON 响应"""
+        # 尝试提取 JSON 块
+        if "```json" in response:
+            start = response.find("```json") + 7
+            end = response.find("```", start)
+            if end > start:
+                response = response[start:end].strip()
+        elif "```" in response:
+            start = response.find("```") + 3
+            end = response.find("```", start)
+            if end > start:
+                response = response[start:end].strip()
+
+        return json.loads(response)
+
+    def _request_with_retry(
+        self,
+        prompt: str,
+        context: str,
+        log: Callable[[str], None],
+    ) -> tuple[str, int]:
+        max_attempts = self.retry_config.max_attempts
+        delay = self.retry_config.delay
+        last_error = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return self.provider.chat(prompt), attempt
+            except Exception as e:
+                last_error = e
+                if attempt < max_attempts:
+                    log(f"{context} RETRY {attempt}/{max_attempts}: {type(e).__name__}: {e}")
+                    time.sleep(delay)
+
+        raise RuntimeError(f"请求失败 ({max_attempts} 次尝试): {last_error}")
+
+    def _write_result(
+        self,
+        output_file: Path,
+        question_id: str,
+        target_model: str,
+        total_score: float,
+        max_score: float,
+        indicators: list,
+        dimensions: dict,
+        feedback: str,
+    ):
+        output_file.parent.mkdir(exist_ok=True)
+
+        result = {
+            "judge_model": self.judge_name,
+            "target_model": target_model,
+            "question_id": question_id,
+            "judged_at": datetime.now(timezone.utc).isoformat(),
+            "total_score": total_score,
+            "max_score": max_score,
+            "indicators": indicators,
+            "dimensions": dimensions,
+            "feedback": feedback,
+        }
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            yaml.dump(result, f, allow_unicode=True, default_flow_style=False, sort_keys=False)

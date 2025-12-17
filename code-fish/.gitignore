@@ -40,6 +40,7 @@ results/raw/test/*.yaml
 results/raw/judge/*.yaml
 providers/test.yaml
 providers/judge.yaml
+config.yaml
 
 # OS
 .DS_Store

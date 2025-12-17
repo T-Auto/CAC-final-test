@@ -1,7 +1,7 @@
 # CAC Benchmark 配置示例
 # 复制此文件为 config.yaml 并填入你的 API 密钥
 
-model:
+test-model:
   name: gpt-4o                  # 输出文件名 (test-results/{name}.md)
   provider: openai              # gemini | anthropic | openai | custom
   api_key: ${OPENAI_API_KEY}    # 支持环境变量
@@ -11,6 +11,16 @@ model:
     temperature: 0.3
     max_tokens: 8192
     timeout: 300
+
+judge-model:
+  name: gpt-4o-judge
+  provider: openai
+  api_key: ${OPENAI_API_KEY}
+  base_url: https://api.openai.com/v1
+  model_id: gpt-4o
+  params:
+    temperature: 0.1
+    max_tokens: 4096
 
 retry:
   max_attempts: 3
@@ -24,7 +34,7 @@ retry:
 # ============================================================
 
 # --- OpenAI ---
-# model:
+# test-model:
 #   name: gpt-4o
 #   provider: openai
 #   api_key: ${OPENAI_API_KEY}
@@ -32,7 +42,7 @@ retry:
 #   model_id: gpt-4o
 
 # --- Anthropic (Claude) ---
-# model:
+# test-model:
 #   name: claude-3-5-sonnet
 #   provider: anthropic
 #   api_key: ${ANTHROPIC_API_KEY}
@@ -40,7 +50,7 @@ retry:
 #   model_id: claude-3-5-sonnet-20241022
 
 # --- Google Gemini ---
-# model:
+# test-model:
 #   name: gemini-2.0-flash
 #   provider: gemini
 #   api_key: ${GOOGLE_API_KEY}
@@ -48,7 +58,7 @@ retry:
 #   model_id: gemini-2.0-flash-exp
 
 # --- DeepSeek (OpenAI 兼容) ---
-# model:
+# test-model:
 #   name: deepseek-r1
 #   provider: openai
 #   api_key: ${DEEPSEEK_API_KEY}
@@ -56,7 +66,7 @@ retry:
 #   model_id: deepseek-reasoner
 
 # --- Qwen (OpenAI 兼容) ---
-# model:
+# test-model:
 #   name: qwen-max
 #   provider: openai
 #   api_key: ${DASHSCOPE_API_KEY}
@@ -64,7 +74,7 @@ retry:
 #   model_id: qwen-max
 
 # --- Custom (完整 URL，如 Ollama Cloud) ---
-# model:
+# test-model:
 #   name: qwen2.5-72b
 #   provider: custom
 #   api_key: ${OLLAMA_API_KEY}

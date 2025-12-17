@@ -18,6 +18,8 @@ cp config.yaml.example config.yaml
 python cli.py --scope math              # 测试整个数理题库
 python cli.py --scope math/base-test    # 测试数理基础题
 python cli.py --scope math/advanced --range 001-005  # 指定范围
+python cli.py --mode judge --scope math --target mimo-v2-flash -j 4  # 评分已有结果
+python cli.py --mode all --scope math -j 4  # 测试 + 评分
 python cli.py --scope logic -j 8        # 并发测试（默认 1）
 python cli.py --scope logic -j 8 --json > report.json  # 机器可读汇总
 python cli.py --scope logic --dry-run   # 预览将测试的题目
@@ -27,7 +29,7 @@ python cli.py --scope logic --dry-run   # 预览将测试的题目
 
 ```yaml
 # config.yaml
-model:
+test-model:
   name: gpt-4o                  # 输出文件名 (test-results/{name}.md)
   provider: openai              # gemini | anthropic | openai | custom
   api_key: ${OPENAI_API_KEY}    # 支持环境变量
@@ -36,6 +38,18 @@ model:
   params:
     temperature: 0.3
     max_tokens: 8192
+    timeout: 300
+
+# 可选：仅 judge/all 模式需要
+judge-model:
+  name: gpt-4o-judge
+  provider: openai
+  api_key: ${OPENAI_API_KEY}
+  base_url: https://api.openai.com/v1
+  model_id: gpt-4o
+  params:
+    temperature: 0.1
+    max_tokens: 4096
 
 retry:
   max_attempts: 3
@@ -60,6 +74,8 @@ python cli.py [options]
   --scope, -s     测试范围: math, code, logic, comp, hallucination 或 math/base-test
 
 可选:
+  --mode, -m      运行模式: test(默认) | judge | all
+  --target, -t    judge 模式: 被评分的模型名 (默认=test-model.name)
   --config, -c    配置文件路径 (默认: config.yaml)
   --range, -r     题号范围: 001-005 或 003
   --force, -f     强制重测 (忽略已有结果)
@@ -74,6 +90,7 @@ python cli.py [options]
 
 ```
 数理能力基准测试题库/base-test/001-xxx/test-results/gpt-4o.md
+数理能力基准测试题库/base-test/001-xxx/test-results/gpt-4o.judge.yaml
 ```
 
 ## 目录结构

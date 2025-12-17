@@ -29,7 +29,8 @@ class RetryConfig:
 @dataclass
 class Config:
     """完整配置"""
-    model: ModelConfig
+    test_model: ModelConfig
+    judge_model: Optional[ModelConfig]
     retry: RetryConfig
     question_banks: str = "data/question_banks.yaml"
 
@@ -62,6 +63,20 @@ def expand_env_vars_recursive(obj):
     return obj
 
 
+def _parse_model(data: dict, section: str) -> ModelConfig:
+    try:
+        return ModelConfig(
+            name=data["name"],
+            provider=data["provider"],
+            api_key=data["api_key"],
+            base_url=data["base_url"],
+            model_id=data.get("model_id", data["name"]),
+            params=data.get("params", {}),
+        )
+    except KeyError as e:
+        raise ValueError(f"{section} 缺少字段: {e.args[0]}") from e
+
+
 def load_config(config_path: str) -> Config:
     """加载配置文件"""
     path = Path(config_path)
@@ -71,28 +86,40 @@ def load_config(config_path: str) -> Config:
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
-    # 展开环境变量
-    data = expand_env_vars_recursive(raw)
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError("配置格式无效: 顶层必须是 YAML map/object")
 
-    # 解析 model
-    model_data = data.get("model", {})
-    model = ModelConfig(
-        name=model_data["name"],
-        provider=model_data["provider"],
-        api_key=model_data["api_key"],
-        base_url=model_data["base_url"],
-        model_id=model_data.get("model_id", model_data["name"]),
-        params=model_data.get("params", {}),
-    )
+    # 解析 test-model（必选）
+    test_model_data = raw.get("test-model") or raw.get("model")
+    if test_model_data is None:
+        raise ValueError("配置缺少 test-model")
+    if not isinstance(test_model_data, dict):
+        raise ValueError("test-model 必须是对象")
+    test_model = _parse_model(expand_env_vars_recursive(test_model_data), "test-model")
+
+    # 解析 judge-model（可选）
+    judge_model_data = raw.get("judge-model")
+    if judge_model_data is None:
+        judge_model = None
+    else:
+        if not isinstance(judge_model_data, dict):
+            raise ValueError("judge-model 必须是对象")
+        judge_model = _parse_model(expand_env_vars_recursive(judge_model_data), "judge-model")
 
     # 解析 retry
-    retry_data = data.get("retry", {})
+    retry_data = raw.get("retry", {})
+    if retry_data is None:
+        retry_data = {}
+    if not isinstance(retry_data, dict):
+        raise ValueError("retry 必须是对象")
+    retry_data = expand_env_vars_recursive(retry_data)
     retry = RetryConfig(
         max_attempts=retry_data.get("max_attempts", 3),
         delay=retry_data.get("delay", 10.0),
     )
 
-    # 题库路径
-    question_banks = data.get("question_banks", "data/question_banks.yaml")
+    question_banks = expand_env_vars(raw.get("question_banks", "data/question_banks.yaml"))
 
-    return Config(model=model, retry=retry, question_banks=question_banks)
+    return Config(test_model=test_model, judge_model=judge_model, retry=retry, question_banks=question_banks)
