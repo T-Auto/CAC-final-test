@@ -8,8 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Validate question format (runs automatically on pre-commit)
 python scripts/validate_questions.py
 
-# Run benchmark evaluation
-cd code-fish && python main.py
+# Run benchmark tests
+cd code-fish
+python cli.py --scope math              # Test all math questions
+python cli.py --scope math/base-test    # Test math base level
+python cli.py --scope logic --dry-run   # Preview questions to test
 
 # Enable git hooks (validates commit messages and question formats)
 git config core.hooksPath .githooks
@@ -23,33 +26,45 @@ pip install pyyaml
 
 # Evaluation system
 cd code-fish
-python -m venv .venv
-.venv\Scripts\Activate.ps1  # Windows PowerShell
 pip install -r requirements.txt
 
-# Configure models (copy examples and add API keys)
-cp providers/test.yaml.example providers/test.yaml
-cp providers/judge.yaml.example providers/judge.yaml
+# Configure model (copy example and add API key)
+cp config.yaml.example config.yaml
+# Edit config.yaml with your API key
 ```
 
 ## Project Architecture
 
-LLM/Agent benchmark suite with automated evaluation. Two-phase flow:
-1. **Ask**: Send prompts to tested models, collect responses
-2. **Judge**: Use judge model (e.g., Claude) to score responses against reference answers
+LLM/Agent benchmark suite with CLI-driven test runner.
 
 ### Evaluation System (`code-fish/`)
-- `main.py`: Orchestrates test → judge pipeline
-- `src/ask.py`: Sends prompts to tested models with retry logic
-- `src/judge.py`: Builds judge prompts, parses scoring YAML, calculates final_score
-- `src/question_loader.py`: Scans question banks, loads meta.yaml/prompt.md/reference.md
-- `src/adaptors/`: LLM API adapters (OpenAI, Anthropic, Doubao) inheriting `BaseLLMAdaptor`
+- `cli.py`: CLI entry point with scope/range/force options
+- `src/config.py`: Config loading with `${ENV_VAR}` support
+- `src/scope.py`: Resolves `math/base-test` to question paths
+- `src/runner.py`: Executes tests with retry and incremental mode
+- `src/providers/`: LLM providers (OpenAI, Anthropic, Gemini, Custom)
 
-### Configuration Files
-- `providers/test.yaml`: Tested models (copy from `.example`)
-- `providers/judge.yaml`: Judge model config
-- `data/question_banks.yaml`: Question bank paths (math, code, logic, comprehensive)
-- `data/indicators.yaml`: Scoring indicator definitions
+### Configuration
+```yaml
+# config.yaml
+model:
+  name: gpt-4o                  # Output filename
+  provider: openai              # gemini | anthropic | openai | custom
+  api_key: ${OPENAI_API_KEY}    # Environment variable
+  base_url: https://api.openai.com/v1
+  model_id: gpt-4o
+  params:
+    temperature: 0.3
+    max_tokens: 8192
+```
+
+### Provider Types
+| Provider | URL Handling | Use Case |
+|----------|-------------|----------|
+| `openai` | Auto-append `/chat/completions` | OpenAI/DeepSeek/Qwen |
+| `anthropic` | `/v1/messages` | Claude |
+| `gemini` | `/v1beta/models/{model}:generateContent` | Google Gemini |
+| `custom` | Use URL as-is | Ollama Cloud etc. |
 
 ### Question Bank Structure
 ```
@@ -60,7 +75,7 @@ LLM/Agent benchmark suite with automated evaluation. Two-phase flow:
         ├── prompt.md           # Exact prompt for tested model
         ├── reference.md        # Answer/criteria for judge model
         ├── README.md           # Human documentation
-        └── test-results/       # Historical results (model-name.md)
+        └── test-results/       # Output: {model-name}.md
 ```
 
 ### Scoring Indicator Categories
@@ -83,9 +98,9 @@ Use the `question-creator` skill (`.claude/skills/question-creator/`) for guided
 
 ## Adding LLM Providers
 
-1. Create adapter in `code-fish/src/adaptors/` inheriting `BaseLLMAdaptor`
-2. Implement `chat(prompt, system_prompt=None, **kwargs) -> str`
-3. Register in `src/adaptors/__init__.py` ADAPTOR_REGISTRY
+1. Create file in `code-fish/src/providers/` inheriting `BaseProvider`
+2. Implement `chat(prompt: str) -> str`
+3. Register in `src/providers/__init__.py` PROVIDER_REGISTRY
 
 ## Commit Messages
 
