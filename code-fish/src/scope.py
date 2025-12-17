@@ -80,12 +80,12 @@ class ScopeResolver:
         # 先尝试 CATEGORY_MAP
         if category in CATEGORY_MAP:
             dir_name = CATEGORY_MAP[category]
-            return self.base_dir.parent / dir_name
+            return (self.base_dir.parent / dir_name).resolve()
 
         # 再尝试从配置文件查找
         for bank in self.banks_config.get("banks", []):
             if bank.get("category") == category:
-                return self.base_dir / bank["path"]
+                return (self.base_dir / bank["path"]).resolve()
 
         return None
 
@@ -99,47 +99,36 @@ class ScopeResolver:
         """扫描匹配的题目"""
         questions = []
 
-        # 确定要扫描的难度目录
-        if difficulty:
-            difficulty_dirs = [self._normalize_difficulty(difficulty)]
-        else:
-            # 扫描所有难度
-            difficulty_dirs = ["base-test", "advanced-test", "final-test", "final-test+"]
+        def is_in_range(number: int) -> bool:
+            if range_start is not None and number < range_start:
+                return False
+            if range_end is not None and number > range_end:
+                return False
+            return True
 
-        for diff_dir in difficulty_dirs:
-            diff_path = bank_path / diff_dir
-            if not diff_path.exists():
-                continue
+        def scan_difficulty_dir(difficulty_dir: Path):
+            if not difficulty_dir.exists():
+                return
 
-            # 扫描题目目录
-            for item in diff_path.iterdir():
+            for item in difficulty_dir.iterdir():
                 if not item.is_dir():
                     continue
-
-                # 检查是否有 prompt.md (判断是否为有效题目)
                 if not (item / "prompt.md").exists():
                     continue
-
-                # 提取题号
                 match = re.match(r"^(\d+)", item.name)
                 if not match:
                     continue
-
                 number = int(match.group(1))
-
-                # 范围过滤
-                if range_start is not None and number < range_start:
+                if not is_in_range(number):
                     continue
-                if range_end is not None and number > range_end:
-                    continue
+                questions.append(Question(path=item, id=item.name, number=number))
 
-                questions.append(
-                    Question(
-                        path=item,
-                        id=item.name,
-                        number=number,
-                    )
-                )
+        if difficulty:
+            scan_difficulty_dir(bank_path / self._normalize_difficulty(difficulty))
+            return questions
+
+        for diff_dir in ["base-test", "advanced-test", "final-test", "final-test+"]:
+            scan_difficulty_dir(bank_path / diff_dir)
 
         return questions
 
@@ -147,6 +136,8 @@ class ScopeResolver:
         """标准化难度名称"""
         # 移除 -test 后缀（如果有），然后添加
         difficulty = difficulty.rstrip("/")
+        if difficulty in {"base-test", "advanced-test", "final-test", "final-test+"}:
+            return difficulty
         if difficulty.endswith("-test"):
             return difficulty
         if difficulty == "final+":

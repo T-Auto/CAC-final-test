@@ -17,6 +17,10 @@ banks:
   - path: ../综合能力测评
     category: comprehensive
     name: 综合能力测评
+    
+  - path: ../幻觉控制与指令遵循测试
+    category: hallucination
+    name: 幻觉控制与指令遵循测试
 
 # 难度级别定义
 difficulty_levels:

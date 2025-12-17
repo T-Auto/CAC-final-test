@@ -3,6 +3,7 @@
 Examples:
     python cli.py --scope math
     python cli.py --scope math/base-test --range 001-005
+    python cli.py --scope hallucination
     python cli.py --config config.yaml --scope code
     python cli.py --scope math --force
     python cli.py --scope math/advanced --dry-run
@@ -49,7 +50,7 @@ def main(argv=None) -> int:
         "--scope",
         "-s",
         required=True,
-        help="测试范围: math, code, logic, comp 或 math/base-test",
+        help="测试范围: math, code, logic, comp, hallucination 或 math/base-test",
     )
 
     parser.add_argument(

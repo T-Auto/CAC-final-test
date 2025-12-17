@@ -1,6 +1,10 @@
 id: hallucination-001
 brief: Token计算指令遵循测试
 category: hallucination
+difficulty: advanced
+tags:
+  - hallucination_control
+  - instruction_following
 scoring_std:
   max_score: 10
   indicators:
