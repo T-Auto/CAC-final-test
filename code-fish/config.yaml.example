@@ -1,0 +1,72 @@
+# CAC Benchmark 配置示例
+# 复制此文件为 config.yaml 并填入你的 API 密钥
+
+model:
+  name: gpt-4o                  # 输出文件名 (test-results/{name}.md)
+  provider: openai              # gemini | anthropic | openai | custom
+  api_key: ${OPENAI_API_KEY}    # 支持环境变量
+  base_url: https://api.openai.com/v1
+  model_id: gpt-4o              # API 请求用的 model 字段
+  params:
+    temperature: 0.3
+    max_tokens: 8192
+    timeout: 300
+
+retry:
+  max_attempts: 3
+  delay: 10
+
+# 题库配置路径 (可选，默认 data/question_banks.yaml)
+# question_banks: data/question_banks.yaml
+
+# ============================================================
+# Provider 配置示例
+# ============================================================
+
+# --- OpenAI ---
+# model:
+#   name: gpt-4o
+#   provider: openai
+#   api_key: ${OPENAI_API_KEY}
+#   base_url: https://api.openai.com/v1
+#   model_id: gpt-4o
+
+# --- Anthropic (Claude) ---
+# model:
+#   name: claude-3-5-sonnet
+#   provider: anthropic
+#   api_key: ${ANTHROPIC_API_KEY}
+#   base_url: https://api.anthropic.com
+#   model_id: claude-3-5-sonnet-20241022
+
+# --- Google Gemini ---
+# model:
+#   name: gemini-2.0-flash
+#   provider: gemini
+#   api_key: ${GOOGLE_API_KEY}
+#   base_url: https://generativelanguage.googleapis.com
+#   model_id: gemini-2.0-flash-exp
+
+# --- DeepSeek (OpenAI 兼容) ---
+# model:
+#   name: deepseek-r1
+#   provider: openai
+#   api_key: ${DEEPSEEK_API_KEY}
+#   base_url: https://api.deepseek.com/v1
+#   model_id: deepseek-reasoner
+
+# --- Qwen (OpenAI 兼容) ---
+# model:
+#   name: qwen-max
+#   provider: openai
+#   api_key: ${DASHSCOPE_API_KEY}
+#   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+#   model_id: qwen-max
+
+# --- Custom (完整 URL，如 Ollama Cloud) ---
+# model:
+#   name: qwen2.5-72b
+#   provider: custom
+#   api_key: ${OLLAMA_API_KEY}
+#   base_url: https://api.ollama.ai/v1/chat/completions
+#   model_id: qwen2.5:72b
