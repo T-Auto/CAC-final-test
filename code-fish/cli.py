@@ -296,7 +296,7 @@ def main(argv=None) -> int:
             }
 
         if judge_summary:
-            result["ok"] = result["ok"] and judge_summary.failed == 0
+            result["ok"] = result["ok"] and judge_summary.failed == 0 and judge_summary.no_answer == 0
             result["judge"] = {
                 "judge_model": judge_summary.judge_name,
                 "target_model": judge_summary.target_model,
@@ -330,7 +330,7 @@ def main(argv=None) -> int:
     if test_summary:
         failed += test_summary.failed
     if judge_summary:
-        failed += judge_summary.failed
+        failed += judge_summary.failed + judge_summary.no_answer
     return 0 if failed == 0 else 1
 
 

@@ -92,7 +92,7 @@ def load_config(config_path: str) -> Config:
         raise ValueError("配置格式无效: 顶层必须是 YAML map/object")
 
     # 解析 test-model（必选）
-    test_model_data = raw.get("test-model") or raw.get("model")
+    test_model_data = raw.get("test-model")
     if test_model_data is None:
         raise ValueError("配置缺少 test-model")
     if not isinstance(test_model_data, dict):

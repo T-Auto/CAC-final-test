@@ -116,14 +116,16 @@ class JudgeRunner:
 
             # 检查是否有测试结果
             if not answer_file.exists():
+                error = f"缺少测试结果: {answer_file.name}"
                 items_by_index[i] = JudgeItemResult(
                     index=i,
                     question_id=question.id,
                     question_path=question.path,
                     target_model=target_model,
                     status="no_answer",
+                    error=error,
                 )
-                log(f"[{i}/{total}] NO_ANSWER {question.id} (无测试结果)")
+                log(f"[{i}/{total}] NO_ANSWER {question.id} ({error})")
                 continue
 
             # 增量模式：跳过已评分的
