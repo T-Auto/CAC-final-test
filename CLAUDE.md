@@ -38,10 +38,12 @@ cp config.yaml.example config.yaml
 LLM/Agent benchmark suite with CLI-driven test runner.
 
 ### Evaluation System (`code-fish/`)
-- `cli.py`: CLI entry point with scope/range/force options
+- `cli.py`: CLI entry point with rich help, scope/range/force options
 - `src/config.py`: Config loading with `${ENV_VAR}` support
 - `src/scope.py`: Resolves `math/base-test` to question paths
 - `src/runner.py`: Executes tests with retry and incremental mode
+- `src/judge.py`: Executes scoring with LLM-as-judge
+- `src/reporting.py`: Event-driven output (PlainReporter/RichReporter)
 - `src/providers/`: LLM providers (OpenAI, Anthropic, Gemini, Custom)
 
 ### Configuration
