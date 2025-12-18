@@ -1,4 +1,8 @@
 """OpenAI Provider (含 custom 模式)"""
+import json
+import sys
+import time
+
 import requests
 
 from .base import BaseProvider
@@ -14,19 +18,15 @@ class OpenAIProvider(BaseProvider):
         }
 
         messages = [{"role": "user", "content": prompt}]
+        stream = self.config.params.get("stream", False)
 
+        # 透传所有 params，兼容各厂商参数 (reasoning_effort, enable_thinking 等)
         data = {
             "model": self.config.model_id,
             "messages": messages,
-            "temperature": self.get_param("temperature"),
-            "max_tokens": self.get_param("max_tokens"),
+            "stream": stream,
+            **self.config.params,
         }
-
-        # 可选参数
-        for param in ["top_p", "presence_penalty", "frequency_penalty", "stop"]:
-            value = self.config.params.get(param)
-            if value is not None:
-                data[param] = value
 
         provider = (self.config.provider or "").lower()
 
@@ -35,14 +35,53 @@ class OpenAIProvider(BaseProvider):
             url = self.config.base_url
         else:
             base_url = self.config.base_url.rstrip("/")
-            if base_url.endswith("/chat/completions"):
-                url = base_url
-            else:
-                url = f"{base_url}/chat/completions"
+            url = base_url if base_url.endswith("/chat/completions") else f"{base_url}/chat/completions"
 
         timeout = self.get_param("timeout")
+
+        if stream:
+            return self._stream_chat(url, headers, data, timeout)
+
         response = requests.post(url, headers=headers, json=data, timeout=timeout)
         response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
 
-        result = response.json()
-        return result["choices"][0]["message"]["content"]
+    def _stream_chat(self, url: str, headers: dict, data: dict, timeout: int) -> str:
+        """流式请求，显示实时进度（仅 TTY 环境）"""
+        start = time.time()
+        ttft = None
+        chunks = 0
+        content = []
+        is_tty = sys.stderr.isatty()
+
+        with requests.post(url, headers=headers, json=data, timeout=timeout, stream=True) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                line = line.decode("utf-8")
+                if not line.startswith("data: "):
+                    continue
+                payload = line[6:]
+                if payload == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(payload)
+                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+                    text = delta.get("content", "")
+                    if text:
+                        if ttft is None:
+                            ttft = time.time() - start
+                        chunks += 1
+                        content.append(text)
+                        if is_tty:
+                            elapsed = time.time() - start
+                            sys.stderr.write(f"\r  ⏳ TTFT: {ttft:.2f}s | {elapsed:.1f}s | ~{chunks} chunks")
+                            sys.stderr.flush()
+                except json.JSONDecodeError:
+                    continue
+
+        if is_tty:
+            sys.stderr.write("\r" + " " * 60 + "\r")
+            sys.stderr.flush()
+        return "".join(content)
