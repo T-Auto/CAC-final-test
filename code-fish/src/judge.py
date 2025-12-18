@@ -2,18 +2,18 @@
 from __future__ import annotations
 
 import json
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import List, Literal, Optional
 
 import yaml
 
 from .config import RetryConfig
 from .providers import BaseProvider
+from .reporting import Event, EventType, Phase, Reporter
 from .scope import Question
 
 
@@ -23,7 +23,7 @@ class JudgeItemResult:
     question_id: str
     question_path: Path
     target_model: str
-    status: str  # "done" | "skipped" | "failed" | "no_answer"
+    status: Literal["done", "skipped", "failed", "no_answer"]
     total_score: Optional[float] = None
     max_score: Optional[float] = None
     dimensions: Optional[dict] = None
@@ -93,7 +93,7 @@ class JudgeRunner:
         questions: List[Question],
         target_model: str,
         concurrency: int = 1,
-        log_fn: Optional[Callable[[str], None]] = None,
+        reporter: Optional[Reporter] = None,
     ) -> JudgeSummary:
         if concurrency < 1:
             raise ValueError("concurrency 必须 >= 1")
@@ -101,14 +101,6 @@ class JudgeRunner:
         total = len(questions)
         items_by_index: dict[int, JudgeItemResult] = {}
         to_judge: list[tuple[int, Question, Path, Path]] = []
-
-        log_lock = threading.Lock()
-
-        def log(message: str):
-            if log_fn is None:
-                return
-            with log_lock:
-                log_fn(message)
 
         for i, question in enumerate(questions, 1):
             answer_file = question.path / "test-results" / f"{target_model}.md"
@@ -125,7 +117,15 @@ class JudgeRunner:
                     status="no_answer",
                     error=error,
                 )
-                log(f"[{i}/{total}] NO_ANSWER {question.id} ({error})")
+                if reporter is not None:
+                    reporter.on_event(Event(
+                        phase=Phase.JUDGE,
+                        event_type=EventType.NO_ANSWER,
+                        index=i,
+                        total=total,
+                        question_id=question.id,
+                        error=error,
+                    ))
                 continue
 
             # 增量模式：跳过已评分的
@@ -138,17 +138,32 @@ class JudgeRunner:
                     status="skipped",
                     output_file=output_file,
                 )
-                log(f"[{i}/{total}] SKIP {question.id} (已有评分)")
+                if reporter is not None:
+                    reporter.on_event(Event(
+                        phase=Phase.JUDGE,
+                        event_type=EventType.SKIP,
+                        index=i,
+                        total=total,
+                        question_id=question.id,
+                        output_file=output_file,
+                    ))
                 continue
 
             to_judge.append((i, question, answer_file, output_file))
 
         def judge_one(i: int, question: Question, answer_file: Path, output_file: Path) -> JudgeItemResult:
             started = time.monotonic()
-            log(f"[{i}/{total}] JUDGE {question.id}")
-
             attempts: Optional[int] = None
             try:
+                if reporter is not None:
+                    reporter.on_event(Event(
+                        phase=Phase.JUDGE,
+                        event_type=EventType.START,
+                        index=i,
+                        total=total,
+                        question_id=question.id,
+                    ))
+
                 # 读取题目、参考答案、被测回答
                 prompt = (question.path / "prompt.md").read_text(encoding="utf-8")
                 reference = (question.path / "reference.md").read_text(encoding="utf-8")
@@ -168,8 +183,10 @@ class JudgeRunner:
                 # 调用评分模型
                 response, attempts = self._request_with_retry(
                     judge_prompt,
-                    context=f"[{i}/{total}] {question.id}",
-                    log=log,
+                    index=i,
+                    total=total,
+                    question_id=question.id,
+                    reporter=reporter,
                 )
 
                 # 解析评分结果
@@ -215,7 +232,18 @@ class JudgeRunner:
                 )
 
                 elapsed = time.monotonic() - started
-                log(f"[{i}/{total}] DONE {question.id} ({total_score}/{max_score_num}, {elapsed:.2f}s)")
+                if reporter is not None:
+                    reporter.on_event(Event(
+                        phase=Phase.JUDGE,
+                        event_type=EventType.DONE,
+                        index=i,
+                        total=total,
+                        question_id=question.id,
+                        elapsed_s=elapsed,
+                        attempt=attempts,
+                        score=total_score,
+                        max_score=max_score_num,
+                    ))
 
                 return JudgeItemResult(
                     index=i,
@@ -234,7 +262,17 @@ class JudgeRunner:
             except Exception as e:
                 elapsed = time.monotonic() - started
                 error = f"{type(e).__name__}: {e}"
-                log(f"[{i}/{total}] FAIL {question.id}: {error}")
+                if reporter is not None:
+                    reporter.on_event(Event(
+                        phase=Phase.JUDGE,
+                        event_type=EventType.FAIL,
+                        index=i,
+                        total=total,
+                        question_id=question.id,
+                        elapsed_s=elapsed,
+                        attempt=attempts,
+                        error=error,
+                    ))
                 return JudgeItemResult(
                     index=i,
                     question_id=question.id,
@@ -290,7 +328,10 @@ class JudgeRunner:
         if not meta_file.exists():
             return {}
         with open(meta_file, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+            meta = yaml.safe_load(f) or {}
+            if not isinstance(meta, dict):
+                return {}
+            return meta
 
     def _build_judge_prompt(self, prompt: str, reference: str, answer: str, indicators: list, max_score: int) -> str:
         indicators_list = "\n".join(f"- {ind}" for ind in indicators)
@@ -321,8 +362,10 @@ class JudgeRunner:
     def _request_with_retry(
         self,
         prompt: str,
-        context: str,
-        log: Callable[[str], None],
+        index: int,
+        total: int,
+        question_id: str,
+        reporter: Optional[Reporter],
     ) -> tuple[str, int]:
         max_attempts = self.retry_config.max_attempts
         delay = self.retry_config.delay
@@ -334,7 +377,17 @@ class JudgeRunner:
             except Exception as e:
                 last_error = e
                 if attempt < max_attempts:
-                    log(f"{context} RETRY {attempt}/{max_attempts}: {type(e).__name__}: {e}")
+                    if reporter is not None:
+                        reporter.on_event(Event(
+                            phase=Phase.JUDGE,
+                            event_type=EventType.RETRY,
+                            index=index,
+                            total=total,
+                            question_id=question_id,
+                            attempt=attempt,
+                            max_attempts=max_attempts,
+                            error=f"{type(e).__name__}: {e}",
+                        ))
                     time.sleep(delay)
 
         raise RuntimeError(f"请求失败 ({max_attempts} 次尝试): {last_error}")

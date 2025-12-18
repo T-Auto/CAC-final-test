@@ -1,16 +1,22 @@
 """测试执行器"""
 from __future__ import annotations
 
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import List, Literal, Optional
 
 from .config import RetryConfig
 from .providers import BaseProvider
+from .reporting import Event, EventType, Phase, Reporter
 from .scope import Question
+
+
+class RetryExhaustedError(RuntimeError):
+    def __init__(self, max_attempts: int, last_error: Exception):
+        self.attempts = max_attempts
+        super().__init__(f"请求失败 ({max_attempts} 次尝试): {last_error}")
 
 
 @dataclass(frozen=True)
@@ -18,7 +24,7 @@ class TestItemResult:
     index: int
     question_id: str
     question_path: Path
-    status: str
+    status: Literal["done", "skipped", "failed"]
     output_file: Optional[Path] = None
     elapsed_s: Optional[float] = None
     attempts: Optional[int] = None
@@ -53,7 +59,7 @@ class TestRunner:
         self,
         questions: List[Question],
         concurrency: int = 1,
-        log_fn: Optional[Callable[[str], None]] = None,
+        reporter: Optional[Reporter] = None,
     ) -> TestRunSummary:
         if concurrency < 1:
             raise ValueError("concurrency 必须 >= 1")
@@ -61,14 +67,6 @@ class TestRunner:
         total = len(questions)
         items_by_index: dict[int, TestItemResult] = {}
         to_run: list[tuple[int, Question, Path]] = []
-
-        log_lock = threading.Lock()
-
-        def log(message: str):
-            if log_fn is None:
-                return
-            with log_lock:
-                log_fn(message)
 
         for i, question in enumerate(questions, 1):
             output_file = question.path / "test-results" / f"{self.model_name}.md"
@@ -81,26 +79,57 @@ class TestRunner:
                     status="skipped",
                     output_file=output_file,
                 )
-                log(f"[{i}/{total}] SKIP {question.id} (已有结果)")
+                if reporter is not None:
+                    reporter.on_event(
+                        Event(
+                            phase=Phase.TEST,
+                            event_type=EventType.SKIP,
+                            index=i,
+                            total=total,
+                            question_id=question.id,
+                            output_file=output_file,
+                        )
+                    )
                 continue
 
             to_run.append((i, question, output_file))
 
         def run_one(i: int, question: Question, output_file: Path) -> TestItemResult:
             started = time.monotonic()
-            log(f"[{i}/{total}] TEST {question.id}")
-
             attempts: Optional[int] = None
             try:
+                if reporter is not None:
+                    reporter.on_event(
+                        Event(
+                            phase=Phase.TEST,
+                            event_type=EventType.START,
+                            index=i,
+                            total=total,
+                            question_id=question.id,
+                        )
+                    )
                 prompt = (question.path / "prompt.md").read_text(encoding="utf-8")
                 response, attempts = self._request_with_retry(
                     prompt,
-                    context=f"[{i}/{total}] {question.id}",
-                    log=log,
+                    index=i,
+                    total=total,
+                    question_id=question.id,
+                    reporter=reporter,
                 )
                 self._write_result(question.path, response)
                 elapsed = time.monotonic() - started
-                log(f"[{i}/{total}] DONE {question.id} ({elapsed:.2f}s)")
+                if reporter is not None:
+                    reporter.on_event(
+                        Event(
+                            phase=Phase.TEST,
+                            event_type=EventType.DONE,
+                            index=i,
+                            total=total,
+                            question_id=question.id,
+                            elapsed_s=elapsed,
+                            attempt=attempts,
+                        )
+                )
                 return TestItemResult(
                     index=i,
                     question_id=question.id,
@@ -112,8 +141,22 @@ class TestRunner:
                 )
             except Exception as e:
                 elapsed = time.monotonic() - started
+                if isinstance(e, RetryExhaustedError) and attempts is None:
+                    attempts = e.attempts
                 error = f"{type(e).__name__}: {e}"
-                log(f"[{i}/{total}] FAIL {question.id}: {error}")
+                if reporter is not None:
+                    reporter.on_event(
+                        Event(
+                            phase=Phase.TEST,
+                            event_type=EventType.FAIL,
+                            index=i,
+                            total=total,
+                            question_id=question.id,
+                            elapsed_s=elapsed,
+                            attempt=attempts,
+                            error=error,
+                        )
+                    )
                 return TestItemResult(
                     index=i,
                     question_id=question.id,
@@ -155,12 +198,14 @@ class TestRunner:
     def _request_with_retry(
         self,
         prompt: str,
-        context: str,
-        log: Callable[[str], None],
+        index: int,
+        total: int,
+        question_id: str,
+        reporter: Optional[Reporter],
     ) -> tuple[str, int]:
         max_attempts = self.retry_config.max_attempts
         delay = self.retry_config.delay
-        last_error = None
+        last_error: Optional[Exception] = None
 
         for attempt in range(1, max_attempts + 1):
             try:
@@ -168,10 +213,22 @@ class TestRunner:
             except Exception as e:
                 last_error = e
                 if attempt < max_attempts:
-                    log(f"{context} RETRY {attempt}/{max_attempts}: {type(e).__name__}: {e}")
+                    if reporter is not None:
+                        reporter.on_event(
+                            Event(
+                                phase=Phase.TEST,
+                                event_type=EventType.RETRY,
+                                index=index,
+                                total=total,
+                                question_id=question_id,
+                                attempt=attempt,
+                                max_attempts=max_attempts,
+                                error=f"{type(e).__name__}: {e}",
+                            )
+                        )
                     time.sleep(delay)
 
-        raise RuntimeError(f"请求失败 ({max_attempts} 次尝试): {last_error}")
+        raise RetryExhaustedError(max_attempts=max_attempts, last_error=last_error or RuntimeError("unknown error"))
 
     def _write_result(self, question_path: Path, response: str):
         """写入测试结果"""

@@ -1,27 +1,10 @@
 #!/usr/bin/env python3
-"""
-Examples:
-    python cli.py --scope math
-    python cli.py --scope math/base-test --range 001-005
-    python cli.py --scope hallucination
-    python cli.py --config config.yaml --scope code
-    python cli.py --mode judge --scope math --target mimo-v2-flash -j 4
-    python cli.py --mode all --scope math -j 4
-    python cli.py --scope logic -j 8
-    python cli.py --scope logic -j 8 --json > report.json
-    python cli.py --scope math --force
-    python cli.py --scope math/advanced --dry-run
-
-Providers:
-    openai      OpenAI/DeepSeek/Qwen 等（自动补 `/chat/completions`）
-    anthropic   Claude（`/v1/messages`）
-    gemini      Google Gemini（`/v1beta/...:generateContent`）
-    custom      完整 URL（如 Ollama Cloud）
-"""
+"""CAC Benchmark Test Runner - LLM/Agent 能力评测工具"""
 import json
 import argparse
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Optional
 
 # 添加 src 到路径
@@ -32,25 +15,135 @@ from src.scope import ScopeResolver
 from src.runner import TestRunner
 from src.judge import JudgeRunner
 from src.providers import create_provider
+from src.reporting import Phase, create_reporter, is_tty
 
 
-def main(argv=None) -> int:
+def print_rich_help():
+    """使用 rich 打印美化的帮助信息"""
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.text import Text
+
+    console = Console(emoji=False)
+
+    # 标题
+    console.print()
+    console.print(Panel.fit(
+        "[bold cyan]CAC Benchmark Test Runner[/]\n[dim]LLM/Agent 能力评测工具[/]",
+        border_style="cyan"
+    ))
+
+    # 用法
+    console.print("\n[bold]用法:[/]")
+    console.print("  python cli.py [OPTIONS] --scope <SCOPE>", style="green")
+
+    # 必选参数
+    console.print("\n[bold]必选参数:[/]")
+    args_table = Table(show_header=False, box=None, padding=(0, 2))
+    args_table.add_column("参数", style="cyan")
+    args_table.add_column("说明")
+    args_table.add_row("-s, --scope", "测试范围: math, code, logic, comp, hallucination 或 math/base-test")
+    console.print(args_table)
+
+    # 可选参数
+    console.print("\n[bold]可选参数:[/]")
+    opts_table = Table(show_header=False, box=None, padding=(0, 2))
+    opts_table.add_column("参数", style="cyan")
+    opts_table.add_column("说明")
+    opts_table.add_row("-m, --mode", "运行模式: test(默认), judge, all")
+    opts_table.add_row("-c, --config", "配置文件路径 (默认: config.yaml)")
+    opts_table.add_row("-r, --range", "题号范围: 001-005 或 003")
+    opts_table.add_row("-t, --target", "judge 模式: 被评分的模型名")
+    opts_table.add_row("-j, --concurrency", "并发数 (默认: 1)")
+    opts_table.add_row("-f, --force", "强制重新测试 (忽略已有结果)")
+    opts_table.add_row("--dry-run", "仅显示将要测试的题目")
+    opts_table.add_row("--json", "输出 JSON 汇总到 stdout")
+    opts_table.add_row("-h, --help", "显示帮助信息")
+    console.print(opts_table)
+
+    # Provider 说明
+    console.print("\n[bold]Providers:[/]")
+    prov_table = Table(show_header=False, box=None, padding=(0, 2))
+    prov_table.add_column("类型", style="yellow")
+    prov_table.add_column("说明")
+    prov_table.add_row("openai", "OpenAI/DeepSeek/Qwen (自动补 /chat/completions)")
+    prov_table.add_row("anthropic", "Claude (/v1/messages)")
+    prov_table.add_row("gemini", "Google Gemini (/v1beta/...:generateContent)")
+    prov_table.add_row("custom", "完整 URL (如 Ollama Cloud)")
+    console.print(prov_table)
+
+    # 示例
+    console.print("\n[bold]示例:[/]")
+    examples = [
+        ("python cli.py --scope math", "测试所有数学题"),
+        ("python cli.py --scope math/base-test --range 001-005", "测试指定范围"),
+        ("python cli.py --mode all --scope logic -j 4", "测试+评分，4并发"),
+        ("python cli.py --scope math --dry-run", "预览将测试的题目"),
+    ]
+    for cmd, desc in examples:
+        console.print(f"  [green]{cmd}[/]")
+        console.print(f"    [dim]{desc}[/]")
+
+    console.print()
+
+
+def make_json_base(args, config) -> dict:
+    judge_model = None
+    if getattr(config, "judge_model", None) is not None:
+        judge_model = {
+            "name": config.judge_model.name,
+            "provider": config.judge_model.provider,
+        }
+
+    return {
+        "ok": True,
+        "mode": args.mode,
+        "scope": args.scope,
+        "range": args.range,
+        "concurrency": args.concurrency,
+        "incremental": not args.force,
+        "test_model": {
+            "name": config.test_model.name,
+            "provider": config.test_model.provider,
+        },
+        "judge_model": judge_model,
+        "error": None,
+        "dry_run": bool(getattr(args, "dry_run", False)),
+        "total": 0,
+        "items": [],
+        "test": None,
+        "judge": None,
+    }
+
+
+def _make_stub_config():
+    return SimpleNamespace(
+        test_model=SimpleNamespace(
+            name=None,
+            provider=None,
+        ),
+        judge_model=None,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
+
+    # 检查是否请求帮助或无参数
+    if not argv or "-h" in argv or "--help" in argv:
+        if is_tty():
+            print_rich_help()
+        else:
+            # 非 TTY 环境使用简单帮助
+            print(__doc__)
+        return 0
 
     parser = argparse.ArgumentParser(
         description="CAC Benchmark Test Runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
         add_help=False,
-    )
-
-    parser.add_argument(
-        "-h",
-        "--help",
-        action="help",
-        default=argparse.SUPPRESS,
-        help="显示帮助信息并退出",
     )
 
     parser.add_argument(
@@ -121,13 +214,33 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.concurrency < 1:
-        print("错误: --concurrency/-j 必须 >= 1", file=sys.stderr)
+        error = "--concurrency/-j 必须 >= 1"
+        if args.json:
+            result = make_json_base(args, _make_stub_config())
+            result["ok"] = False
+            result["error"] = error
+            print(json.dumps(result, ensure_ascii=False))
+            return 1
+        print(f"错误: {error}", file=sys.stderr)
         return 1
 
     log_stream = sys.stderr if args.json else sys.stdout
+    use_rich = not args.json  # JSON 模式禁用 rich
+    reporter = create_reporter(stream=log_stream, use_rich=use_rich)
 
     def log(message: str = ""):
         print(message, file=log_stream)
+
+    def emit_json(payload: dict) -> None:
+        print(json.dumps(payload, ensure_ascii=False))
+
+    def json_error(error: str, cfg=None) -> int:
+        cfg = cfg or _make_stub_config()
+        result = make_json_base(args, cfg)
+        result["ok"] = False
+        result["error"] = error
+        emit_json(result)
+        return 1
 
     # 1. 加载配置
     try:
@@ -135,15 +248,13 @@ def main(argv=None) -> int:
     except FileNotFoundError:
         error = f"配置文件不存在: {args.config}"
         if args.json:
-            print(json.dumps({"ok": False, "error": error}, ensure_ascii=False))
-            return 1
+            return json_error(error)
         log(f"错误: {error}")
         return 1
     except ValueError as e:
         error = f"配置无效: {e}"
         if args.json:
-            print(json.dumps({"ok": False, "error": error}, ensure_ascii=False))
-            return 1
+            return json_error(error)
         log(f"错误: {error}")
         return 1
 
@@ -157,14 +268,16 @@ def main(argv=None) -> int:
         questions = resolver.resolve(args.scope, args.range)
     except ValueError as e:
         if args.json:
-            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
-            return 1
+            return json_error(str(e), cfg=config)
         log(f"错误: {e}")
         return 1
 
     if not questions:
         if args.json:
-            print(json.dumps({"ok": True, "total": 0, "items": []}, ensure_ascii=False))
+            result = make_json_base(args, config)
+            result["total"] = 0
+            result["items"] = []
+            emit_json(result)
             return 0
         log("未找到匹配的题目")
         return 0
@@ -182,17 +295,11 @@ def main(argv=None) -> int:
                 except ValueError:
                     return str(path)
 
-            print(
-                json.dumps(
-                    {
-                        "ok": True,
-                        "dry_run": True,
-                        "total": len(questions),
-                        "items": [{"id": q.id, "path": rel(q.path)} for q in questions],
-                    },
-                    ensure_ascii=False,
-                )
-            )
+            result = make_json_base(args, config)
+            result["dry_run"] = True
+            result["total"] = len(questions)
+            result["items"] = [{"id": q.id, "path": rel(q.path)} for q in questions]
+            emit_json(result)
             return 0
 
         log("\n将测试以下题目:")
@@ -214,14 +321,22 @@ def main(argv=None) -> int:
     if args.mode in ("judge", "all") and config.judge_model is None:
         error = "judge/all 模式需要配置 judge-model"
         if args.json:
-            print(json.dumps({"ok": False, "error": error}, ensure_ascii=False))
-            return 1
+            return json_error(error, cfg=config)
         log(f"错误: {error}")
         return 1
 
     target_model = args.target or config.test_model.name
     test_summary = None
     judge_summary = None
+
+    def safe_reporter_call(method: str, *call_args) -> None:
+        fn = getattr(reporter, method, None)
+        if fn is None:
+            return
+        try:
+            fn(*call_args)
+        except Exception as exc:
+            log(f"reporter.{method} 异常: {exc}")
 
     # 5. 执行 test 模式
     if args.mode in ("test", "all"):
@@ -231,9 +346,9 @@ def main(argv=None) -> int:
             retry_config=config.retry,
             incremental=not args.force,
         )
-        log(f"\n开始测试... (并发: {args.concurrency})")
-        test_summary = runner.run(questions, concurrency=args.concurrency, log_fn=log)
-        log(f"\n测试完成: {test_summary.done} | 跳过: {test_summary.skipped} | 失败: {test_summary.failed} | 总计: {test_summary.total}")
+        safe_reporter_call("on_phase_start", Phase.TEST, len(questions), config.test_model.name)
+        test_summary = runner.run(questions, concurrency=args.concurrency, reporter=reporter)
+        safe_reporter_call("on_phase_end", Phase.TEST, test_summary.done, test_summary.skipped, test_summary.failed)
 
     # 6. 执行 judge 模式
     if args.mode in ("judge", "all"):
@@ -243,34 +358,22 @@ def main(argv=None) -> int:
             retry_config=config.retry,
             incremental=not args.force,
         )
-        log(f"\n开始评分... (目标: {target_model}, 并发: {args.concurrency})")
-        judge_summary = judge_runner.judge(questions, target_model=target_model, concurrency=args.concurrency, log_fn=log)
-        avg_str = f"{judge_summary.avg_score:.2f}" if judge_summary.avg_score is not None else "N/A"
-        log(f"\n评分完成: {judge_summary.done} | 跳过: {judge_summary.skipped} | 失败: {judge_summary.failed} | 无答案: {judge_summary.no_answer} | 平均分: {avg_str}")
+        safe_reporter_call("on_phase_start", Phase.JUDGE, len(questions), target_model)
+        judge_summary = judge_runner.judge(questions, target_model=target_model, concurrency=args.concurrency, reporter=reporter)
+        safe_reporter_call(
+            "on_phase_end",
+            Phase.JUDGE,
+            judge_summary.done,
+            judge_summary.skipped,
+            judge_summary.failed,
+            judge_summary.no_answer,
+            judge_summary.avg_score,
+        )
 
     # 7. JSON 输出
     if args.json:
-        result = {
-            "ok": True,
-            "mode": args.mode,
-            "scope": args.scope,
-            "range": args.range,
-            "concurrency": args.concurrency,
-            "incremental": not args.force,
-            "test_model": {
-                "name": config.test_model.name,
-                "provider": config.test_model.provider,
-                "base_url": config.test_model.base_url,
-                "model_id": config.test_model.model_id,
-            },
-        }
-        if config.judge_model is not None:
-            result["judge_model"] = {
-                "name": config.judge_model.name,
-                "provider": config.judge_model.provider,
-                "base_url": config.judge_model.base_url,
-                "model_id": config.judge_model.model_id,
-            }
+        result = make_json_base(args, config)
+        result["total"] = len(questions)
 
         if test_summary:
             result["ok"] = result["ok"] and test_summary.failed == 0
@@ -323,7 +426,7 @@ def main(argv=None) -> int:
                 ],
             }
 
-        print(json.dumps(result, ensure_ascii=False))
+        emit_json(result)
 
     # 8. 返回码
     failed = 0
