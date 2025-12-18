@@ -1,0 +1,14 @@
+id: hallucination-base-001
+brief: C语言多行注释陷阱
+category: hallucination
+difficulty: base
+tags:
+  - hallucination_control
+  - c_language
+  - syntax_trap
+scoring_std:
+  max_score: 10
+  indicators:
+    - accuracy       # 是否正确识别编译错误
+    - analysis       # 是否正确分析注释陷阱
+    - caution        # 是否注意到多个问题点
