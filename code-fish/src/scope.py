@@ -21,6 +21,7 @@ CATEGORY_MAP = {
     "logic": "自然语言与逻辑能力基准测试题库",
     "comp": "综合能力测评",
     "comprehensive": "综合能力测评",
+    "hallucination": "幻觉控制与指令遵循测试",
 }
 
 

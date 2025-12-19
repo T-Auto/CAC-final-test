@@ -1,6 +1,5 @@
 """Anthropic Provider"""
 import json
-import sys
 import requests
 
 from .base import BaseProvider
@@ -31,6 +30,9 @@ class AnthropicProvider(BaseProvider):
             if value is not None:
                 data[param] = value
 
+        # 移除stream参数（当前不支持流式响应）
+        data.pop("stream", None)
+
         url = f"{self.config.base_url.rstrip('/')}/v1/messages"
         timeout = self.get_param("timeout")
         response = requests.post(url, headers=headers, json=data, timeout=timeout)
@@ -38,9 +40,20 @@ class AnthropicProvider(BaseProvider):
 
         result = response.json()
         
-        # 调试：打印完整响应结构
-        print(f"[DEBUG] MiniMax response keys: {result.keys()}", file=sys.stderr)
-        if "content" in result:
-            print(f"[DEBUG] content type: {type(result['content'])}, value: {result['content']}", file=sys.stderr)
+        # 解析 Anthropic/MiniMax 标准格式
+        thinking_content = ""
+        text_content = ""
         
-        return result["content"][0]["text"]
+        for item in result["content"]:
+            if isinstance(item, dict):
+                item_type = item.get("type", "")
+                if item_type == "thinking":
+                    # thinking 块的内容在 "thinking" 键中
+                    thinking_content = item.get("thinking", "")
+                elif item_type == "text":
+                    text_content = item.get("text", "")
+        
+        # 组合输出：thinking 包裹在 <thinking> 标签中
+        if thinking_content:
+            return f"<thinking>\n{thinking_content}\n</thinking>\n\n{text_content}"
+        return text_content
