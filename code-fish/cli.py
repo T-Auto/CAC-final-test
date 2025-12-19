@@ -127,30 +127,11 @@ def _make_stub_config():
     )
 
 
-def main(argv: list[str] | None = None) -> int:
-    if argv is None:
-        argv = sys.argv[1:]
-
-    # 无参数时进入交互模式
-    if not argv:
-        if is_tty():
-            from src.interactive import InteractiveMenu
-
-            menu = InteractiveMenu()
-            result = menu.run()
-            if result is None:
-                return 0  # 用户退出
-            argv = result.to_argv()
-        else:
-            print_rich_help()
-            return 0
-
-    # 保留原有的 -h/--help 处理
+def _run_once(argv: list[str]) -> int:
     if "-h" in argv or "--help" in argv:
         if is_tty():
             print_rich_help()
         else:
-            # 非 TTY 环境使用简单帮助
             print(__doc__)
         return 0
 
@@ -449,6 +430,37 @@ def main(argv: list[str] | None = None) -> int:
     if judge_summary:
         failed += judge_summary.failed + judge_summary.no_answer
     return 0 if failed == 0 else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    if not argv:
+        if is_tty():
+            from rich.console import Console
+            from src.interactive import InteractiveMenu
+
+            console = Console(emoji=False)
+            menu = InteractiveMenu(console=console)
+
+            while True:
+                result = menu.run()
+                if result is None:
+                    return 0
+
+                _run_once(result.to_argv())
+
+                console.print("\n[dim]按 Enter 返回主菜单...[/]")
+                try:
+                    input()
+                except (KeyboardInterrupt, EOFError):
+                    return 0
+        else:
+            print_rich_help()
+            return 0
+
+    return _run_once(argv)
 
 
 if __name__ == "__main__":
