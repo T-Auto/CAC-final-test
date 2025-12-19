@@ -59,16 +59,26 @@ class InteractiveMenu:
         self._print_banner()
 
     def _print_banner(self):
-        banner_text = Text("CAC BENCHMARK", style="bold cyan")
-        subtitle = Text("LLM Capability Assessment CLI", style="dim white")
-        
+        logo = r"""
+   ______   ___     ______
+  / ____/  /   |   / ____/
+ / /      / /| |  / /
+/ /___   / ___ | / /___
+\____/  /_/  |_| \____/
+"""
         self.console.print()
         self.console.print(Panel(
-            Align.center(Text.assemble(banner_text, "\n", subtitle)),
+            Align.center(Text.assemble(
+                Text(logo.strip("\n"), style="bold cyan"),
+                "\n",
+                Text("B E N C H M A R K", style="bold white"),
+                "\n",
+                Text("LLM Capability Assessment CLI", style="dim white")
+            )),
             box=box.ROUNDED,
             border_style="blue",
             expand=True,
-            padding=(0, 2)
+            padding=(1, 2)
         ))
 
     def run(self) -> Optional[InteractiveArgs]:
