@@ -2,8 +2,6 @@
 
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
-> 🚨 **重要代码审查报告**：请所有维护者务必阅读 [代码质量检查报告](docs/code-review-report.md)，了解项目当前状态和需要修复的关键问题。
-
 > ⚠️ **重构进行中 (Refactoring in Progress)**
 > 
 > 本项目正在进行重大重构，目标是实现完全自动化的评测流程：
