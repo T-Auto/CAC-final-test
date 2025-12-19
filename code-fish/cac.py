@@ -447,22 +447,28 @@ def main(argv: list[str] | None = None) -> int:
             menu = InteractiveMenu(console=console)
 
             while True:
-                result = menu.run()
-                if result is None:
-                    return 0
-
-                _run_once(result.to_argv())
-
-                console.print("\n[dim]按 Enter 返回主菜单...[/]")
                 try:
-                    input()
-                except (KeyboardInterrupt, EOFError):
+                    result = menu.run()
+                    if result is None:
+                        return 0
+
+                    _run_once(result.to_argv())
+
+                    console.print("\n[dim]按 Enter 返回主菜单...[/]")
+                    try:
+                        input()
+                    except (KeyboardInterrupt, EOFError):
+                        return 0
+                except KeyboardInterrupt:
                     return 0
         else:
             print_rich_help()
             return 0
 
-    return _run_once(argv)
+    try:
+        return _run_once(argv)
+    except KeyboardInterrupt:
+        return 130  # Standard exit code for SIGINT
 
 
 if __name__ == "__main__":
