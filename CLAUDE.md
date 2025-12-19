@@ -10,9 +10,9 @@ python scripts/validate_questions.py
 
 # Run benchmark tests
 cd code-fish
-python cli.py --scope math              # Test all math questions
-python cli.py --scope math/base-test    # Test math base level
-python cli.py --scope logic --dry-run   # Preview questions to test
+python cac.py --scope math              # Test all math questions
+python cac.py --scope math/base-test    # Test math base level
+python cac.py --scope logic --dry-run   # Preview questions to test
 
 # Enable git hooks (validates commit messages and question formats)
 git config core.hooksPath .githooks
@@ -38,7 +38,7 @@ cp config.yaml.example config.yaml
 LLM/Agent benchmark suite with CLI-driven test runner.
 
 ### Evaluation System (`code-fish/`)
-- `cli.py`: CLI entry point with rich help, scope/range/force options
+- `cac.py`: CLI entry point with rich help, scope/range/force options
 - `src/config.py`: Config loading with `${ENV_VAR}` support
 - `src/scope.py`: Resolves `math/base-test` to question paths
 - `src/runner.py`: Executes tests with retry and incremental mode

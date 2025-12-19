@@ -15,14 +15,14 @@ cp config.yaml.example config.yaml
 # 编辑 config.yaml，填入 API key
 
 # 3. 运行测试
-python cli.py --scope math              # 测试整个数理题库
-python cli.py --scope math/base-test    # 测试数理基础题
-python cli.py --scope math/advanced --range 001-005  # 指定范围
-python cli.py --mode judge --scope math --target mimo-v2-flash -j 4  # 评分已有结果
-python cli.py --mode all --scope math -j 4  # 测试 + 评分
-python cli.py --scope logic -j 8        # 并发测试（默认 1）
-python cli.py --scope logic -j 8 --json > report.json  # 机器可读汇总
-python cli.py --scope logic --dry-run   # 预览将测试的题目
+python cac.py --scope math              # 测试整个数理题库
+python cac.py --scope math/base-test    # 测试数理基础题
+python cac.py --scope math/advanced --range 001-005  # 指定范围
+python cac.py --mode judge --scope math --target mimo-v2-flash -j 4  # 评分已有结果
+python cac.py --mode all --scope math -j 4  # 测试 + 评分
+python cac.py --scope logic -j 8        # 并发测试（默认 1）
+python cac.py --scope logic -j 8 --json > report.json  # 机器可读汇总
+python cac.py --scope logic --dry-run   # 预览将测试的题目
 ```
 
 ## 配置文件
@@ -68,7 +68,7 @@ retry:
 ## CLI 参数
 
 ```bash
-python cli.py [options]
+python cac.py [options]
 
 必选:
   --scope, -s     测试范围: math, code, logic, comp, hallucination 或 math/base-test
@@ -97,7 +97,7 @@ python cli.py [options]
 
 ```
 code-fish/
-├── cli.py                  # CLI 入口
+├── cac.py                  # CLI 入口
 ├── config.yaml             # 模型配置
 ├── config.yaml.example     # 配置示例
 ├── src/

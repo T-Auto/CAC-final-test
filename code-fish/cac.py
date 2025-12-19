@@ -38,7 +38,7 @@ def print_rich_help():
 
     # 用法
     console.print("\n[bold]Usage:[/]")
-    console.print("  python cli.py [OPTIONS] --scope <SCOPE>", style="green")
+    console.print("  python cac.py [OPTIONS] --scope <SCOPE>", style="green")
 
     # 必选参数
     console.print("\n[bold]Required:[/]")
@@ -78,10 +78,10 @@ def print_rich_help():
     # 示例
     console.print("\n[bold]Examples:[/]")
     examples = [
-        ("python cli.py --scope math", "Test all math questions"),
-        ("python cli.py --scope math/base-test --range 001-005", "Test specific range"),
-        ("python cli.py --mode all --scope logic -j 4", "Test & Judge with 4 concurrency"),
-        ("python cli.py --scope math --dry-run", "Preview questions"),
+        ("python cac.py --scope math", "Test all math questions"),
+        ("python cac.py --scope math/base-test --range 001-005", "Test specific range"),
+        ("python cac.py --mode all --scope logic -j 4", "Test & Judge with 4 concurrency"),
+        ("python cac.py --scope math --dry-run", "Preview questions"),
     ]
     for cmd, desc in examples:
         console.print(f"  [green]{cmd}[/]")
