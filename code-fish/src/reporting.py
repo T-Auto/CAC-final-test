@@ -263,7 +263,7 @@ class RichReporter:
                 title=f"[blue]Task Started[/]",
                 border_style="blue",
                 box=box.ROUNDED,
-                expand=False,
+                expand=True,
                 padding=(0, 2)
             ))
 
@@ -322,7 +322,7 @@ class RichReporter:
                 title="[bold]Execution Summary[/]",
                 border_style="green" if failed == 0 else "red",
                 box=box.ROUNDED,
-                expand=False,
+                expand=True,
                 padding=(0, 2)
             ))
         except Exception as exc:
