@@ -2,21 +2,29 @@
 
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
-> ⚠️ **重构进行中 (Refactoring in Progress)**
-> 
-> 本项目正在进行重大重构，目标是实现完全自动化的评测流程：
-> - 📁 **题目格式标准化**：所有题目迁移到 `meta.yaml` + `prompt.md` + `reference.md` 结构
-> - 🤖 **自动化评测**：使用 [code-fish](./code-fish/) 实现自动化评测
-> - 🔧 **开发工具**：Git hooks 验证 + Claude Code Skill 辅助创建题目
-> 
-> 详见 [code-fish/README.md](./code-fish/README.md) 了解评测系统架构。
-
 ## 📖 项目简介 (Project Overview)
 
 本项目旨在构建一个全面且高难度的 AI 能力评测体系，主要包含：
 
-- **全方位题库**：涵盖大模型与 Agent 的核心能力测试。
-- **自动化测评**：计划开发 Python 后端程序，实现模型能力的自动化打分（及未来的前端展示）。
+- **全方位题库**：涵盖大模型与 Agent 的核心能力测试
+- **自动化评测**：使用 [code-fish](./code-fish/) CLI 工具实现自动化测试与评分
+- **标准化格式**：题目采用 `meta.yaml` + `prompt.md` + `reference.md` 结构
+- **开发工具**：Git hooks 验证 + AI 辅助创建题目（见 [AGENTS.md](./AGENTS.md)）
+
+## 🚀 快速开始 (Quick Start)
+
+```bash
+cd code-fish
+pip install -r requirements.txt
+cp config.yaml.example config.yaml  # 编辑填入 API key
+
+# 运行测试
+python cac.py                       # 交互式菜单
+python cac.py --scope math          # 测试数理题库
+python cac.py --mode all -j 4       # 测试+评分，4并发
+```
+
+详见 [code-fish/README.md](./code-fish/README.md) 了解完整用法。
 
 ## 💡 设计理念 (Design Philosophy)
 
