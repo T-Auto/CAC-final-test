@@ -23,63 +23,65 @@ def print_rich_help():
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
-    from rich.text import Text
+    from rich import box
 
     console = Console(emoji=False)
 
     # 标题
     console.print()
-    console.print(Panel.fit(
-        "[bold cyan]CAC Benchmark Test Runner[/]\n[dim]LLM/Agent 能力评测工具[/]",
-        border_style="cyan"
+    console.print(Panel(
+        "[bold cyan]CAC Benchmark[/] [dim]Test Runner[/]\n[dim]LLM/Agent Capability Assessment CLI[/]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        padding=(0, 2)
     ))
 
     # 用法
-    console.print("\n[bold]用法:[/]")
+    console.print("\n[bold]Usage:[/]")
     console.print("  python cli.py [OPTIONS] --scope <SCOPE>", style="green")
 
     # 必选参数
-    console.print("\n[bold]必选参数:[/]")
-    args_table = Table(show_header=False, box=None, padding=(0, 2))
-    args_table.add_column("参数", style="cyan")
-    args_table.add_column("说明")
-    args_table.add_row("-s, --scope", "测试范围: math, code, logic, comp, hallucination 或 math/base-test")
+    console.print("\n[bold]Required:[/]")
+    args_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2), show_edge=False)
+    args_table.add_column("Arg", style="cyan bold", width=20)
+    args_table.add_column("Desc")
+    args_table.add_row("-s, --scope", "Scope: math, code, logic, comp, hallucination or math/base-test")
     console.print(args_table)
 
     # 可选参数
-    console.print("\n[bold]可选参数:[/]")
-    opts_table = Table(show_header=False, box=None, padding=(0, 2))
-    opts_table.add_column("参数", style="cyan")
-    opts_table.add_column("说明")
-    opts_table.add_row("-m, --mode", "运行模式: test(默认), judge, all")
-    opts_table.add_row("-c, --config", "配置文件路径 (默认: config.yaml)")
-    opts_table.add_row("-r, --range", "题号范围: 001-005 或 003")
-    opts_table.add_row("-t, --target", "judge 模式: 被评分的模型名")
-    opts_table.add_row("-j, --concurrency", "并发数 (默认: 1)")
-    opts_table.add_row("-f, --force", "强制重新测试 (忽略已有结果)")
-    opts_table.add_row("--dry-run", "仅显示将要测试的题目")
-    opts_table.add_row("--json", "输出 JSON 汇总到 stdout")
-    opts_table.add_row("-h, --help", "显示帮助信息")
+    console.print("\n[bold]Options:[/]")
+    opts_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2), show_edge=False)
+    opts_table.add_column("Arg", style="cyan bold", width=20)
+    opts_table.add_column("Desc")
+    opts_table.add_row("-m, --mode", "Mode: test (default), judge, all")
+    opts_table.add_row("-c, --config", "Config path (default: config.yaml)")
+    opts_table.add_row("-r, --range", "Range: 001-005 or 003")
+    opts_table.add_row("-t, --target", "Target model for judge mode")
+    opts_table.add_row("-j, --concurrency", "Concurrency (default: 1)")
+    opts_table.add_row("-f, --force", "Force retry (ignore existing results)")
+    opts_table.add_row("--dry-run", "Preview only")
+    opts_table.add_row("--json", "Output JSON to stdout")
+    opts_table.add_row("-h, --help", "Show this message")
     console.print(opts_table)
 
     # Provider 说明
     console.print("\n[bold]Providers:[/]")
-    prov_table = Table(show_header=False, box=None, padding=(0, 2))
-    prov_table.add_column("类型", style="yellow")
-    prov_table.add_column("说明")
-    prov_table.add_row("openai", "OpenAI/DeepSeek/Qwen (自动补 /chat/completions)")
+    prov_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2), show_edge=False)
+    prov_table.add_column("Type", style="yellow bold", width=20)
+    prov_table.add_column("Desc")
+    prov_table.add_row("openai", "OpenAI/DeepSeek/Qwen (auto adds /chat/completions)")
     prov_table.add_row("anthropic", "Claude (/v1/messages)")
     prov_table.add_row("gemini", "Google Gemini (/v1beta/...:generateContent)")
-    prov_table.add_row("custom", "完整 URL (如 Ollama Cloud)")
+    prov_table.add_row("custom", "Full URL (e.g. Ollama Cloud)")
     console.print(prov_table)
 
     # 示例
-    console.print("\n[bold]示例:[/]")
+    console.print("\n[bold]Examples:[/]")
     examples = [
-        ("python cli.py --scope math", "测试所有数学题"),
-        ("python cli.py --scope math/base-test --range 001-005", "测试指定范围"),
-        ("python cli.py --mode all --scope logic -j 4", "测试+评分，4并发"),
-        ("python cli.py --scope math --dry-run", "预览将测试的题目"),
+        ("python cli.py --scope math", "Test all math questions"),
+        ("python cli.py --scope math/base-test --range 001-005", "Test specific range"),
+        ("python cli.py --mode all --scope logic -j 4", "Test & Judge with 4 concurrency"),
+        ("python cli.py --scope math --dry-run", "Preview questions"),
     ]
     for cmd, desc in examples:
         console.print(f"  [green]{cmd}[/]")

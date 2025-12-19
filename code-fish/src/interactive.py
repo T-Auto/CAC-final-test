@@ -6,10 +6,13 @@ import re
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from rich import box
+from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
+from rich.text import Text
 
 
 @dataclass
@@ -53,6 +56,19 @@ class InteractiveMenu:
 
     def __init__(self, console: Optional[Console] = None):
         self.console = console or Console(emoji=False)
+        self._print_banner()
+
+    def _print_banner(self):
+        banner_text = Text("CAC BENCHMARK", style="bold cyan")
+        subtitle = Text("LLM Capability Assessment CLI", style="dim white")
+        
+        self.console.print()
+        self.console.print(Panel(
+            Align.center(Text.assemble(banner_text, "\n", subtitle)),
+            box=box.ROUNDED,
+            border_style="blue",
+            padding=(0, 2)
+        ))
 
     def run(self) -> Optional[InteractiveArgs]:
         try:
@@ -95,97 +111,113 @@ class InteractiveMenu:
             return None
 
     def _select_mode(self) -> Optional[str]:
-        idx = self._show_menu("选择运行模式", self.MODES, allow_back=False)
+        idx = self._show_menu("Select Mode", self.MODES, allow_back=False)
         if idx is None:
             return None
         return self.MODES[idx][0]
 
     def _select_category(self) -> Optional[str]:
-        idx = self._show_menu("选择题库类别", self.CATEGORIES, allow_back=True)
+        idx = self._show_menu("Select Category", self.CATEGORIES, allow_back=True)
         if idx is None:
             return None
         return self.CATEGORIES[idx][0]
 
     def _select_difficulty(self) -> Optional[str]:
         options = [("all", "全部"), *self.DIFFICULTIES]
-        idx = self._show_menu("选择难度", options, allow_back=True)
+        idx = self._show_menu("Select Difficulty", options, allow_back=True)
         if idx is None:
             return None
         return options[idx][0]
 
     def _input_range(self) -> Optional[str]:
+        self.console.print()
         while True:
-            value = Prompt.ask("题号范围(如 001-005 或 003，回车跳过)", default="", show_default=False).strip()
+            value = Prompt.ask("  [cyan]Range[/] [dim](e.g. 001-005, 003, Enter to skip)[/]", default="", show_default=False).strip()
             if not value:
                 return None
             if self._is_valid_range(value):
                 return value
-            self.console.print("[red]格式不合法：请输入 001-005 或 003[/]")
+            self.console.print("  [red]Format error: use 001-005 or 003[/]")
 
     def _input_advanced(self, mode: str) -> Tuple[int, bool, Optional[str]]:
+        self.console.print()
         while True:
-            concurrency = IntPrompt.ask("并发数", default=1)
+            concurrency = IntPrompt.ask("  [cyan]Concurrency[/]", default=1)
             if concurrency >= 1:
                 break
-            self.console.print("[red]并发数必须 >= 1[/]")
+            self.console.print("  [red]Concurrency must be >= 1[/]")
 
-        force = Confirm.ask("是否强制重测(忽略已有结果)？", default=False)
+        force = Confirm.ask("  [cyan]Force Retry[/] [dim](Ignore existing results)[/]", default=False)
 
         target: Optional[str] = None
         if mode in ("judge", "all"):
-            value = Prompt.ask("target 模型名(回车默认：使用 test-model)", default="", show_default=False).strip()
+            value = Prompt.ask("  [cyan]Target Model[/] [dim](Enter to use test-model)[/]", default="", show_default=False).strip()
             if value:
                 target = value
 
         return concurrency, force, target
 
     def _confirm(self, args: InteractiveArgs) -> Optional[str]:
-        summary = Table(show_header=False, box=None, padding=(0, 1))
-        summary.add_column("k", style="cyan", no_wrap=True)
-        summary.add_column("v", style="green")
-        summary.add_row("mode", args.mode)
-        summary.add_row("scope", args.scope)
-        summary.add_row("range", args.range or "-")
-        summary.add_row("concurrency", str(args.concurrency))
-        summary.add_row("force", "是" if args.force else "否")
+        summary = Table(show_header=False, box=None, padding=(0, 2))
+        summary.add_column("k", style="cyan bold", justify="right")
+        summary.add_column("v", style="white")
+        summary.add_row("Mode", args.mode)
+        summary.add_row("Scope", args.scope)
+        summary.add_row("Range", args.range or "-")
+        summary.add_row("Concurrency", str(args.concurrency))
+        summary.add_row("Force", "Yes" if args.force else "No")
         if args.mode in ("judge", "all"):
-            summary.add_row("target", args.target or "(默认: test-model)")
+            summary.add_row("Target", args.target or "(Default: test-model)")
 
         self.console.print()
-        self.console.print(Panel.fit(summary, title="确认参数", border_style="cyan"))
+        self.console.print(Panel(
+            Align.center(summary),
+            title="[bold]Configuration Review[/]",
+            border_style="green",
+            box=box.ROUNDED,
+            expand=False,
+            padding=(0, 2)
+        ))
 
-        if Confirm.ask("确认开始运行？", default=True):
+        self.console.print()
+        if Confirm.ask("  [bold green]Ready to start?[/]", default=True):
             return "run"
-        if Confirm.ask("改为 dry-run 仅预览？", default=False):
+        if Confirm.ask("  [yellow]Dry-run only?[/]", default=False):
             return "dry-run"
         return None
 
     def _show_menu(self, title: str, options: list[tuple[str, str]], allow_back: bool) -> Optional[int]:
-        self.console.print()
-        self.console.print(Panel.fit(f"[bold cyan]{title}[/]", border_style="cyan"))
-
-        table = Table(show_header=True, header_style="bold cyan")
-        table.add_column("编号", justify="right", style="yellow", no_wrap=True)
-        table.add_column("选项", style="green")
-        table.add_column("说明", style="dim")
+        table = Table(show_header=True, header_style="bold cyan", box=box.SIMPLE, expand=True, show_edge=False, pad_edge=False)
+        table.add_column("#", justify="right", style="yellow", no_wrap=True, width=4)
+        table.add_column("Option", style="bold white")
+        table.add_column("Description", style="dim")
 
         if allow_back:
-            table.add_row("0", "返回上一步", "回到上一层菜单")
+            table.add_row("0", "Back", "Return to previous menu")
         else:
-            table.add_row("0", "退出", "结束交互")
+            table.add_row("0", "Exit", "Exit application")
 
         for idx, (value, desc) in enumerate(options, start=1):
             table.add_row(str(idx), value, desc)
-        self.console.print(table)
+
+        self.console.print()
+        self.console.print(Panel(
+            table,
+            title=f"[bold cyan]{title}[/]",
+            border_style="blue",
+            box=box.ROUNDED,
+            expand=False,
+            padding=(0, 1)
+        ))
 
         max_choice = len(options)
         while True:
-            choice = IntPrompt.ask("请输入编号", default=0)
+            choice = IntPrompt.ask("  [cyan]Select[/]", default=0)
             if choice == 0:
                 return None
             if 1 <= choice <= max_choice:
                 return choice - 1
-            self.console.print(f"[red]无效选择: {choice}（有效范围: 0-{max_choice}）[/]")
+            self.console.print(f"  [red]Invalid choice: {choice} (Valid: 0-{max_choice})[/]")
 
     @staticmethod
     def _is_valid_range(value: str) -> bool:

@@ -249,30 +249,36 @@ class RichReporter:
                 TimeElapsedColumn,
             )
             from rich.panel import Panel
+            from rich import box
 
             self._phase = phase
             self._total = total
             self._completed = 0
 
-            phase_name = "测试" if phase == Phase.TEST else "评分"
-            title = f"{phase_name} - {model_name}"
-
+            phase_name = "TEST" if phase == Phase.TEST else "JUDGE"
+            
             self._console.print()
-            self._console.print(
-                Panel(f"[bold cyan]{title}[/] | 共 {total} 题", expand=False)
-            )
+            self._console.print(Panel(
+                f"[bold cyan]{phase_name}[/] [dim]on[/] [bold white]{model_name}[/]",
+                title=f"[blue]Task Started[/]",
+                border_style="blue",
+                box=box.ROUNDED,
+                expand=False,
+                padding=(0, 2)
+            ))
 
             self._progress = Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TaskProgressColumn(),
+                SpinnerColumn(style="cyan"),
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(bar_width=40, style="dim blue", complete_style="cyan", finished_style="green"),
+                TaskProgressColumn(style="bold white"),
+                TextColumn("[dim]•[/]"),
                 TimeElapsedColumn(),
                 console=self._console,
                 transient=False,
             )
             self._progress.start()
-            self._task_id = self._progress.add_task(f"[cyan]{phase_name}中...", total=total)
+            self._task_id = self._progress.add_task(f"[cyan]Running...[/]", total=total)
         except Exception as exc:
             _reporter_exception("RichReporter.on_phase_start", exc)
 
@@ -287,29 +293,38 @@ class RichReporter:
     ) -> None:
         try:
             from rich.table import Table
+            from rich.panel import Panel
+            from rich import box
 
             if self._progress:
                 self._progress.stop()
                 self._progress = None
 
-            table = Table(show_header=False, box=None)
-            table.add_column("指标", style="bold")
-            table.add_column("值", justify="right")
+            table = Table(show_header=False, box=None, padding=(0, 2))
+            table.add_column("Metric", style="cyan bold", justify="right")
+            table.add_column("Value", justify="left")
 
-            table.add_row("完成", f"[green]{done}[/]")
-            table.add_row("跳过", f"[dim]{skipped}[/]")
-            table.add_row("失败", f"[red]{failed}[/]" if failed > 0 else "0")
+            table.add_row("Completed", f"[green]{done}[/]")
+            table.add_row("Skipped", f"[dim]{skipped}[/]")
+            table.add_row("Failed", f"[red]{failed}[/]" if failed > 0 else "0")
 
             if phase == Phase.JUDGE:
-                table.add_row("无答案", f"[red]{no_answer}[/]" if no_answer > 0 else "0")
+                table.add_row("No Answer", f"[red]{no_answer}[/]" if no_answer > 0 else "0")
                 avg_str = f"{avg_score:.2f}" if avg_score is not None else "N/A"
-                table.add_row("平均分", f"[bold]{avg_str}[/]")
+                table.add_row("Avg Score", f"[bold yellow]{avg_str}[/]")
 
             total = done + skipped + failed + no_answer
-            table.add_row("总计", f"[bold]{total}[/]")
+            table.add_row("Total", f"[bold white]{total}[/]")
 
             self._console.print()
-            self._console.print(table)
+            self._console.print(Panel(
+                table,
+                title="[bold]Execution Summary[/]",
+                border_style="green" if failed == 0 else "red",
+                box=box.ROUNDED,
+                expand=False,
+                padding=(0, 2)
+            ))
         except Exception as exc:
             _reporter_exception("RichReporter.on_phase_end", exc)
 
