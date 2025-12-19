@@ -67,6 +67,7 @@ class InteractiveMenu:
             Align.center(Text.assemble(banner_text, "\n", subtitle)),
             box=box.ROUNDED,
             border_style="blue",
+            expand=True,
             padding=(0, 2)
         ))
 
@@ -175,7 +176,7 @@ class InteractiveMenu:
             title="[bold]Configuration Review[/]",
             border_style="green",
             box=box.ROUNDED,
-            expand=False,
+            expand=True,
             padding=(0, 2)
         ))
 
@@ -206,7 +207,7 @@ class InteractiveMenu:
             title=f"[bold cyan]{title}[/]",
             border_style="blue",
             box=box.ROUNDED,
-            expand=False,
+            expand=True,
             padding=(0, 1)
         ))
 

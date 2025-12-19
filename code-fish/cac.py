@@ -33,6 +33,7 @@ def print_rich_help():
         "[bold cyan]CAC Benchmark[/] [dim]Test Runner[/]\n[dim]LLM/Agent Capability Assessment CLI[/]",
         border_style="cyan",
         box=box.ROUNDED,
+        expand=True,
         padding=(0, 2)
     ))
 
