@@ -230,7 +230,11 @@ class RichReporter:
                     if self._progress and self._task_id is not None:
                         self._progress.update(self._task_id, completed=self._completed)
 
-                self._console.print(message, style=style)
+                # 使用 progress.console.print 确保与进度条正确对齐
+                if self._progress:
+                    self._progress.console.print(message, style=style)
+                else:
+                    self._console.print(message, style=style)
         except Exception as exc:
             _reporter_exception("RichReporter.on_event", exc)
 
