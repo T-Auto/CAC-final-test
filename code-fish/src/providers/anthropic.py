@@ -1,4 +1,6 @@
 """Anthropic Provider"""
+import json
+import sys
 import requests
 
 from .base import BaseProvider
@@ -35,4 +37,10 @@ class AnthropicProvider(BaseProvider):
         response.raise_for_status()
 
         result = response.json()
+        
+        # 调试：打印完整响应结构
+        print(f"[DEBUG] MiniMax response keys: {result.keys()}", file=sys.stderr)
+        if "content" in result:
+            print(f"[DEBUG] content type: {type(result['content'])}, value: {result['content']}", file=sys.stderr)
+        
         return result["content"][0]["text"]
