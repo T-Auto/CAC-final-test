@@ -1,6 +1,6 @@
 ---
 description: Git add, commit, push with CONTRIBUTING.md compliant message
-argument-hint: [optional commit scope]
+argument-hint: [可选指令]
 allowed-tools: Bash(git *:*)
 ---
 
@@ -104,6 +104,8 @@ git diff
 
 ## 参数说明
 
-如果用户提供了参数（通过 `$ARGUMENTS`），将其作为 commit 的可选范围使用。
+如果用户提供了参数（通过 `$ARGUMENTS`），将其作为额外指令执行。
 
-例如：`/gcp auth` 会在 commit message 中添加 `(auth)` 范围。
+例如：
+- `/gcp 把改动拆成代码和测试两次提交` → 分析变更后拆分成两次独立提交
+- `/gcp 只提交 src/ 下的文件` → 只 add 和 commit src/ 目录
