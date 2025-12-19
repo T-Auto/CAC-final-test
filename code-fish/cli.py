@@ -131,8 +131,22 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    # 检查是否请求帮助或无参数
-    if not argv or "-h" in argv or "--help" in argv:
+    # 无参数时进入交互模式
+    if not argv:
+        if is_tty():
+            from src.interactive import InteractiveMenu
+
+            menu = InteractiveMenu()
+            result = menu.run()
+            if result is None:
+                return 0  # 用户退出
+            argv = result.to_argv()
+        else:
+            print_rich_help()
+            return 0
+
+    # 保留原有的 -h/--help 处理
+    if "-h" in argv or "--help" in argv:
         if is_tty():
             print_rich_help()
         else:
