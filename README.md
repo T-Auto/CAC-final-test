@@ -1,5 +1,8 @@
 # CAC-final-test
 
+[![Run in Smithery](https://smithery.ai/badge/skills/t-auto)](https://smithery.ai/skills?ns=t-auto&utm_source=github&utm_medium=badge)
+
+
 Benchmark for Evaluating the Performance of Natural Language Models and Agents / 自然语言模型 & Agent性能评测基准
 
 ## 📖 项目简介 (Project Overview)
