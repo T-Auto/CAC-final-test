@@ -116,4 +116,13 @@ code-fish/
 
 1. 在 `src/providers/` 创建新文件，继承 `BaseProvider`
 2. 实现 `chat(prompt: str) -> str` 方法
-3. 在 `src/providers/__init__.py` 注册
+3. (可选) 实现 `chat_with_tool(prompt: str, tool_schema: dict) -> dict` 支持结构化输出
+4. (可选) 覆盖 `supports_tool_calling() -> bool` 启用 tool calling
+5. 在 `src/providers/__init__.py` 注册
+
+## Judge 模式 - Function Calling
+
+评分模式使用 **Function Calling** 获取结构化输出：
+- OpenAI/Anthropic/Gemini 自动使用 tool calling
+- `custom` provider 自动 fallback 到 JSON 文本解析
+- Tool schema 根据 `meta.yaml` 的 `indicators` 动态生成

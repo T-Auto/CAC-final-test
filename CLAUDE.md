@@ -102,7 +102,16 @@ Use the `question-creator` skill (`.claude/skills/question-creator/`) for guided
 
 1. Create file in `code-fish/src/providers/` inheriting `BaseProvider`
 2. Implement `chat(prompt: str) -> str`
-3. Register in `src/providers/__init__.py` PROVIDER_REGISTRY
+3. (Optional) Implement `chat_with_tool(prompt: str, tool_schema: dict) -> dict` for structured output
+4. (Optional) Override `supports_tool_calling() -> bool` to enable tool calling
+5. Register in `src/providers/__init__.py` PROVIDER_REGISTRY
+
+### Judge Mode - Function Calling
+
+Judge mode uses **Function Calling** (tool use) for robust structured output:
+- OpenAI/Anthropic/Gemini providers automatically use tool calling
+- `custom` provider falls back to JSON parsing from text
+- Tool schema is dynamically generated from `meta.yaml` indicators
 
 ## Commit Messages
 
