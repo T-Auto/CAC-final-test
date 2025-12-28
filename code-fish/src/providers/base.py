@@ -1,5 +1,6 @@
 """Provider 基类"""
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from ..config import ModelConfig
 
@@ -27,6 +28,14 @@ class BaseProvider(ABC):
     def chat(self, prompt: str) -> str:
         """发送请求，返回响应文本"""
         pass
+
+    def supports_tool_calling(self) -> bool:
+        """是否支持 tool calling，子类可覆盖"""
+        return False
+
+    def chat_with_tool(self, prompt: str, tool_schema: dict) -> dict:
+        """强制使用 tool 调用，返回解析后的参数 dict。不支持时抛出 NotImplementedError"""
+        raise NotImplementedError(f"{self.__class__.__name__} 不支持 tool calling")
 
     def get_model_name(self) -> str:
         """用于输出文件命名"""

@@ -61,6 +61,24 @@ JUDGE_PROMPT_TEMPLATE = """你是专业评审员。请根据以下信息评分�
 ## 评分维度（满分 {max_score} 分）
 {indicators_list}
 
+请调用 submit_score 工具提交评分结果。"""
+
+
+# 旧版 prompt（用于不支持 tool calling 的 provider）
+JUDGE_PROMPT_TEMPLATE_LEGACY = """你是专业评审员。请根据以下信息评分：
+
+## 原题目
+{prompt}
+
+## 参考答案/评分标准
+{reference}
+
+## 被测模型的回答
+{answer}
+
+## 评分维度（满分 {max_score} 分）
+{indicators_list}
+
 请严格按照以下 JSON 格式输出（不要输出其他内容）：
 ```json
 {{
@@ -72,6 +90,45 @@ JUDGE_PROMPT_TEMPLATE = """你是专业评审员。请根据以下信息评分�
   "feedback": "<总体评价>"
 }}
 ```"""
+
+
+def _build_judge_tool_schema(max_score: float, indicators: list) -> dict:
+    """构建评分工具的 JSON Schema"""
+    dimension_properties = {}
+    for ind in indicators:
+        dimension_properties[ind] = {
+            "type": "object",
+            "properties": {
+                "score": {"type": "number", "description": f"{ind} 维度得分"},
+                "comment": {"type": "string", "description": f"{ind} 维度评价"},
+            },
+            "required": ["score", "comment"],
+        }
+
+    return {
+        "name": "submit_score",
+        "description": f"提交评分结果，满分 {max_score} 分",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "total_score": {
+                    "type": "number",
+                    "description": f"总分（0-{max_score}）",
+                },
+                "dimensions": {
+                    "type": "object",
+                    "description": "各维度评分",
+                    "properties": dimension_properties,
+                    "required": indicators,
+                },
+                "feedback": {
+                    "type": "string",
+                    "description": "总体评价",
+                },
+            },
+            "required": ["total_score", "dimensions", "feedback"],
+        },
+    }
 
 
 class JudgeRunner:
@@ -177,20 +234,24 @@ class JudgeRunner:
                 if not isinstance(indicators, list):
                     raise ValueError(f"meta.yaml scoring_std.indicators 必须是列表: {type(indicators).__name__}")
 
-                # 构造评分 prompt
-                judge_prompt = self._build_judge_prompt(prompt, reference, answer, indicators, max_score)
+                # 检查是否支持 tool calling
+                use_tool = self.provider.supports_tool_calling()
+                
+                # 构造评分 prompt 和 tool schema
+                judge_prompt = self._build_judge_prompt(prompt, reference, answer, indicators, max_score, use_tool=use_tool)
+                tool_schema = _build_judge_tool_schema(max_score, indicators) if use_tool else None
 
                 # 调用评分模型
-                response, attempts = self._request_with_retry(
+                result, attempts = self._request_with_retry(
                     judge_prompt,
+                    tool_schema=tool_schema,
                     index=i,
                     total=total,
                     question_id=question.id,
                     reporter=reporter,
                 )
 
-                # 解析评分结果
-                result = self._parse_judge_response(response)
+                # 解析评分结果（tool calling 已返回 dict，无需再解析）
                 total_score_raw = result.get("total_score")
                 if total_score_raw is None:
                     raise ValueError("评分输出缺少 total_score")
@@ -333,9 +394,10 @@ class JudgeRunner:
                 return {}
             return meta
 
-    def _build_judge_prompt(self, prompt: str, reference: str, answer: str, indicators: list, max_score: int) -> str:
+    def _build_judge_prompt(self, prompt: str, reference: str, answer: str, indicators: list, max_score: int, use_tool: bool = True) -> str:
         indicators_list = "\n".join(f"- {ind}" for ind in indicators)
-        return JUDGE_PROMPT_TEMPLATE.format(
+        template = JUDGE_PROMPT_TEMPLATE if use_tool else JUDGE_PROMPT_TEMPLATE_LEGACY
+        return template.format(
             prompt=prompt,
             reference=reference,
             answer=answer,
@@ -344,7 +406,7 @@ class JudgeRunner:
         )
 
     def _parse_judge_response(self, response: str) -> dict:
-        """解析评分模型的 JSON 响应"""
+        """解析评分模型的 JSON 响应（仅用于 legacy 模式）"""
         # 尝试提取 JSON 块
         if "```json" in response:
             start = response.find("```json") + 7
@@ -362,18 +424,34 @@ class JudgeRunner:
     def _request_with_retry(
         self,
         prompt: str,
+        tool_schema: Optional[dict],
         index: int,
         total: int,
         question_id: str,
         reporter: Optional[Reporter],
-    ) -> tuple[str, int]:
+    ) -> tuple[dict, int]:
+        """
+        带重试的请求。
+        - 如果 tool_schema 不为 None 且 provider 支持 tool calling，使用 chat_with_tool
+        - 否则使用 chat + JSON 解析
+        返回 (解析后的 dict, 尝试次数)
+        """
         max_attempts = self.retry_config.max_attempts
         delay = self.retry_config.delay
         last_error = None
 
+        use_tool = tool_schema is not None and self.provider.supports_tool_calling()
+
         for attempt in range(1, max_attempts + 1):
             try:
-                return self.provider.chat(prompt), attempt
+                if use_tool:
+                    # 使用 tool calling，直接返回 dict
+                    result = self.provider.chat_with_tool(prompt, tool_schema)
+                else:
+                    # 使用传统方式，需要解析 JSON
+                    response = self.provider.chat(prompt)
+                    result = self._parse_judge_response(response)
+                return result, attempt
             except Exception as e:
                 last_error = e
                 if attempt < max_attempts:

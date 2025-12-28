@@ -8,6 +8,50 @@ from .base import BaseProvider
 class AnthropicProvider(BaseProvider):
     """Anthropic/Claude API Provider"""
 
+    def supports_tool_calling(self) -> bool:
+        """Anthropic 支持 tool use"""
+        return True
+
+    def chat_with_tool(self, prompt: str, tool_schema: dict) -> dict:
+        """使用 tool use 强制输出结构化数据"""
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": self.config.api_key,
+            "anthropic-version": "2023-06-01",
+        }
+
+        messages = [{"role": "user", "content": prompt}]
+
+        # 转换为 Anthropic tool 格式
+        tool_def = {
+            "name": tool_schema["name"],
+            "description": tool_schema.get("description", ""),
+            "input_schema": tool_schema["parameters"],
+        }
+
+        data = {
+            "model": self.config.model_id,
+            "messages": messages,
+            "max_tokens": self.get_param("max_tokens"),
+            "temperature": self.get_param("temperature"),
+            "tools": [tool_def],
+            "tool_choice": {"type": "tool", "name": tool_schema["name"]},
+        }
+
+        url = f"{self.config.base_url.rstrip('/')}/v1/messages"
+        timeout = self.get_param("timeout")
+        response = requests.post(url, headers=headers, json=data, timeout=timeout)
+        response.raise_for_status()
+
+        result = response.json()
+
+        # 从 content 中找到 tool_use 块
+        for item in result["content"]:
+            if isinstance(item, dict) and item.get("type") == "tool_use":
+                return item["input"]
+
+        raise ValueError("Anthropic 响应中未找到 tool_use 块")
+
     def chat(self, prompt: str) -> str:
         headers = {
             "Content-Type": "application/json",
